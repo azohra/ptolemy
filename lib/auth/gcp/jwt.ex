@@ -17,7 +17,7 @@ defmodule Ptolemy.Auth.GCP.JWT do
   @doc """
   Creates a valid JWT according to google specs.
   """
-  def create_jwt(svc, base_claim) do
+  def create_jwt(svc, base_claim, time) do
     iss = svc |> get_key("client_email")
     #Prep the svc acc's private key
     signer = svc |> get_key("private_key")|> Jjwk.from_pem()|> rs256()
@@ -25,7 +25,7 @@ defmodule Ptolemy.Auth.GCP.JWT do
     jwt =
       token()
       |> with_header_args(@google_jwt_header)
-      |> with_claim_generator("exp", fn -> current_time() + 3558 end ) #need to overide the overide (T.T) +/- cpu offset
+      |> with_claim_generator("exp", fn -> current_time() + time end ) #need to overide the overide (T.T) +/- cpu offset
       |> with_claims(base_claim)
       |> with_aud(@google_aud)
       |> with_iss(iss)

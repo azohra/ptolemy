@@ -1,4 +1,7 @@
 # ptolemy
+
+### Still under development!
+
 ptolemy is an application that allows your elixir app to natively integrate to [hashicorp's vault](https://github.com/hashicorp/vault).
 
 ## Features
@@ -40,13 +43,14 @@ config :ptolemy, Ptolemy,
     vault_url: "https://localhost:8200",
     kv_path: "/secret/data/ptolemy",
     role: "application",
+    auth_mode: "GCP"
     remote_server_cert: """
     -----BEGIN CERTIFICATE-----
     -----END CERTIFICATE-----
     """,
-    credentials: %{
-      SVC: ""
-    }
+    iap_on: true,
+    exp: 3600
+    credentials: %{}
   },
   server2: %{...}
   """
@@ -62,6 +66,3 @@ config :ptolemy, Ptolemy,
   # not a real secret, or is it???? 乁( ͡° ͜ʖ ͡°)ㄏ
   ```
   More configuration options and general architecture can be found in the hex docs.
-
-  ## PGP 
-  Git commits and tags are signed with key `5604E4DC6DC74D9B` or with Github's keys (whatever id that is).
