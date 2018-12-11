@@ -1,0 +1,13 @@
+version: "3"
+services:
+  vault:
+    image: vault:0.11.5
+    ports:
+      - "8200:8200"
+      - "8210:8210"
+    environment:
+      VAULT_ADDR: "http://0.0.0.0:8200"
+      VAULT_API_ADDR: "http://0.0.0.0:8210"
+      VAULT_DEV_ROOT_TOKEN_ID: "Dzje67e6pyj3Wh1DqBBMAYYM"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    entrypoint: vault server -dev
