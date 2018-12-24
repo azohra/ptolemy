@@ -10,8 +10,8 @@ config :ptolemy, Ptolemy,
     kv_path: "/secret/data",
     auth_mode: "approle",
     credentials: %{
-      role_id: "",
-      secret_id: ""
+      role_id: System.get_env("ROLE_ID"),
+      secret_id: System.get_env("SECRET_ID")
     },
     opts: [
       role: "default",
