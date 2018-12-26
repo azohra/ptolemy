@@ -28,3 +28,9 @@ export SECRET_ID="$(curl \
     --request POST \
      http://127.0.0.1:8200/v1/auth/approle/role/tester/secret-id \
     | jq -r '.data.secret_id')"
+
+curl \
+    --header "X-Vault-Token: $TOKEN" \
+    --request POST \
+    --data  '{"data":{"foo": "bar", "zip":"zap"}}}' \
+    http://127.0.0.1:8200/v1/secret/data/ptolemy
