@@ -10,7 +10,7 @@ defmodule Ptolemy.Server do
 
   @default_exp 900 #Default expiration for tokens
   @validation_err "Config error! Missing: "
-  @req_m [:vault_url, :auth_mode, :credentials]
+  @req [:vault_url, :auth_mode, :credentials]
 
   @doc """
   Client side api to start a genserver. 
@@ -20,7 +20,7 @@ defmodule Ptolemy.Server do
       Application.get_env(:ptolemy, Ptolemy)
       |> Keyword.get(server)
 
-    with {:ok, missing} <- validate(config) when missing == [] do
+    with {:ok, []} <- validate(config) do
       GenServer.start_link(__MODULE__, config, name: pid)
     else
       {:error, missing} -> raise @validation_err <> missing
@@ -55,28 +55,31 @@ defmodule Ptolemy.Server do
   end
 
   @doc """
-  Validates the configuration that is fed to the start server.
+  Validates the configuration that is fed to the start server. Ptolemy requires a list of keys to
+  be presents in the configuration before it can attempt to make a connection with a remote vault
+  server.
   """
-  defp validate(config) do
-    validate(@req_m, config, {_,[]})
-  end
-
-  defp valiate(req_list, conf, status) do
-    [head|tail] = req_list
-    
-    with {:ok, _ } <- Map.fetch(conf, head) do
-      { _, missing} = status
-      validate(tail, conf, {:ok, missing})
-    else
-      _ ->
-        { _, missing} = status
-        new_missing = [head | missing]
-        validate(tail, conf, {:error, new_missing})
-    end 
+  def validate(config) do
+    validate(@req, config, {:ok,[]})
   end
 
   defp validate([], conf, status) do
-    status
+    case status do 
+      {:ok, []} -> {:ok, []}
+      {:error, missing} -> {:error, missing}
+    end
+  end
+
+  defp validate(req_list, conf, {code, missing}) do
+    [head|tail] = req_list
+
+    status = Map.has_key?(conf, head)
+
+    if status do
+      validate(tail, conf, {:ok, []})
+    else
+      validate(tail, conf, {:error, missing ++ [head]})
+    end
   end
 
   @doc """
