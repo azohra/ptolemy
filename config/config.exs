@@ -7,8 +7,10 @@ config :tesla, adapter: Tesla.Adapter.Hackney
 config :ptolemy, Ptolemy,
   server1: %{
     vault_url: "http://localhost:8200",
-    kv_path: "/secret/data",
     auth_mode: "approle",
+    kv_paths: %{
+      ptolemy: "/secret/data/ptolemy"
+    },
     credentials: %{
       role_id: System.get_env("ROLE_ID"),
       secret_id: System.get_env("SECRET_ID")
@@ -20,6 +22,6 @@ config :ptolemy, Ptolemy,
       -----END CERTIFICATE-----
       """,
       iap_on: false,
-      exp: 60
+      exp: 6000
     ]
   }

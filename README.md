@@ -41,8 +41,10 @@ Edit your `config/config.exs` to include:
 config :ptolemy, Ptolemy,
   server1: %{
     vault_url: "http://localhost:8200",
-    kv_path: "/secret/data",
     auth_mode: "approle",
+    kv_paths : %{
+      ptolemy: "/secret/data/ptolemy"
+    }
     credentials: %{
       role_id: System.get_env("ROLE_ID"),
       secret_id: System.get_env("SECRET_ID")
@@ -66,7 +68,7 @@ config :ptolemy, Ptolemy,
   ```elixir
   iex(1)> {:ok, server} = Ptolemy.start(:server1)
   {:ok, server}
-  iex(2)> server |> Ptolemy.KV.get(:NAME_OF_SECRET_TOKEN) # Ptolemy.get(Ptolemy.KV, :NAME_OF_SECRET_TOKEN) also supported
+  iex(2)> server |> Ptolemy.get(Ptolemy.KV, :NAME_OF_SECRET_TOKEN)
   {:ok, "NsSgY+HlbriOyWucdHJk+7jn0k3wZ9lf/8JOtXpr9cc="} 
   # not a real secret, or is it???? 乁( ͡° ͜ʖ ͡°)ㄏ
   ```

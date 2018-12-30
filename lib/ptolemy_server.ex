@@ -32,10 +32,14 @@ defmodule Ptolemy.Server do
   be inserted inside Tesla's middleware Headers.
   """
   def fetch_credentials(pid) do
-    with {state, tokens} <- GenServer.call(pid, :fetch_creds) do
+    with {state, tokens} <- GenServer.call(pid, :fetch_creds)
+    #CHECK VALIDITY OF THE TOKEN TO SEE IF IT WILL EXPIRE SOON    
+    do
       case {state, tokens} do
         {:ok, tokens} -> tokens
-        {:error, _ } -> GenServer.call(pid, :auth)
+        {:error, _ } -> 
+          {:ok, tok} = GenServer.call(pid, :auth)
+          tok
       end
     end
   end
