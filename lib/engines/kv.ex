@@ -13,14 +13,14 @@ defmodule Ptolemy.Engines.KV do
     * Path - The path to the secret including the name of the vault secret. 
     * key - Key is the key you wish to find within the vault secret. 
   """
-  def read_secret!(client, path, opts \\ []) do
-    with {:ok, resp} <- get(client, "#{path}", query: opts) do
+  def read_secret!(client, path, vers \\ []) do
+    with {:ok, resp} <- get(client, "#{path}", query: vers) do
       case {resp.status, resp.body} do
         {status, body} when status in 200..299 ->
           body
-        {status, e} ->
-          msg = "Could not fetch secret: in remote vault server. Error code: #{status}"
-          throw {:error, msg}
+
+        {status, _} ->
+          throw "Could not fetch secret in remote vault server. Error code: #{status}"
       end
     end
   end
@@ -30,24 +30,33 @@ defmodule Ptolemy.Engines.KV do
   Payload is a map representing N keys with their corresponding values. All data within the 
   payload should be related to the secret.
   """
-  def create_secret!(client, path, name, data, cas \\ nil) do
-    if is_nil(cas) do
-      payload = %{data: data}
-    else
-      payload = %{
-        options: %{cas: cas},
-        data: data
-      }
-    end
+  def create_secret!(client, path, data, cas \\ nil) do
+    payload = if is_nil(cas), do: %{data: data}, else: %{options: %{cas: cas}, data: data}
 
     with {:ok, resp} <- post(client, "#{path}", payload) do
       case {resp.status, resp.body} do
-        {status, body} when status in 200..299 ->
-          {:ok, status}
+        {status, _} when status in 200..299 ->
+          status
 
         {status, e} ->
-          Logger.warn("Could not create secret: #{name} in remote vault server. Error code: #{status}")
-          {:error, e}
+           throw "Could not create secret in remote vault server. Error code: #{status}"
+      end
+    end
+  end
+
+  @doc """
+  Deletes a specific set of version belonging to a specific secret
+  """
+  def delete_latest!(client, path, data, vers) do
+    paylod = %{version: vers}
+  
+    with {:ok, resp} <- delete(client, "#{path}", payload) do
+      case {resp.status, resp.body} do
+        {status, _} when status in 200..299 ->
+          status
+
+        {status, e} ->
+           throw "Could not delete version(s) of secret in remote vault server. Error code: #{status}"
       end
     end
   end
