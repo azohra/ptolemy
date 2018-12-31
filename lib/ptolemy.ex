@@ -32,24 +32,22 @@ defmodule Ptolemy do
     Server.start(name, config)
   end
 
+  def kv_read(pid, secret, key, version \\ 0)
+
   @doc """
   Reads a key from a secret in a remote vault server. This will fetch the specified secret from 
   the Ptolemy configuration.
   """
-  def read(pid, Ptolemy.KV, secret, key, version \\ 0) when is_atom(secret) do
-    {:ok, pmap} = Server.get_data(pid, :kv_paths)
-    path = 
-      pmap
-      |> Map.fetch!(secret)
-
-    read(pid, Ptolemy.KV, path, key, version)
+  def kv_read(pid, secret, key, version) when is_atom(secret) do
+    path = get_kv_path(pid, secret)
+    kv_read(pid, path, key, version)
   end
 
   @doc """
   Reads a key from a secret in a remote vault server.
   """
-  def read(pid, Ptolemy.KV, secret_path, key, version) do
-    with map <- fetch(pid, Ptolemy.KV, secret_path, true, version),
+  def kv_read(pid, secret_path, key, version) do
+    with map <- kv_fetch(pid, secret_path, true, version),
       {:ok, values} <- Map.fetch(map, key)
     do
       {:ok, values}
@@ -58,27 +56,26 @@ defmodule Ptolemy do
     end
   end
 
+  def kv_fetch(pid, secret, silent \\ false, version \\ 0) 
+
   @doc """
   Fetches a secret from a remote vault server. This will fetch the specified secret from 
   the Ptolemy configuration.
   """
-  def fetch(pid, Ptolemy.KV, secret, silent \\ false, version \\ 0) when is_atom(secret) do
-    {:ok, pmap} = Server.get_data(pid, :kv_paths)
-    path = 
-      pmap
-      |> Map.fetch!(secret)
+  def kv_fetch(pid, secret, silent, version) when is_atom(secret) do
+    path = get_kv_path(pid, secret)
 
-    fetch(pid, Ptolemy.KV, path, silent, version)
+    kv_fetch(pid, path, silent, version)
   end
 
   @doc """
   Fetches all values of a secret from a remote vault server. Enabling the silent option 
   will mute the response to only contain the secret's key values.
   """
-  def fetch(pid, Ptolemy.KV, secret, silent, version) do
+  def kv_fetch(pid, secret, silent, version) do
     client = create_client(pid)
-    path = Server.get_data(pid, KV)
     opts = [version: version]
+
     resp = KV.read_secret!(client, secret, opts)
 
     case silent do
@@ -91,19 +88,35 @@ defmodule Ptolemy do
     end
   end
 
-  def update(pid, Ptolemy.KV, secret_path, payload, cas \\ nil) do
+  @doc """
+  Updates a secrets in a remote vault server
+  """
+  def kv_update(pid, secret, payload, cas \\ nil) do
+    kv_create(pid, secret, payload, cas)
+  end
+
+  @doc """
+  Creates a new secret in a remote vault server
+  """
+  def kv_create(pid, secret, payload, cas \\ nil)
+
+  def kv_create(pid, secret, payload, cas) when is_atom(secret) do
+    path = get_kv_path(pid, secret)
+    kv_create(pid, secret, payload, cas)
+  end
+
+  def kv_create(pid, secret, payload, cas) do
+    client = create_client(pid)
+    KV.create_secret!(client, secret, payload, cas)
+  end
+
+
+
+  def kv_delete(pid, secret, opt \\ []) do
     
   end
 
-  def create(pid, Ptolemy.KV, secret_path, payload, cas \\ nil) do
-    
-  end
-
-  def delete(pid, Ptolemy.KV, secret_path, opt \\ []) do
-    
-  end
-
-  def destroy(pid, Ptolemy.KV, secret_path, opt \\ []) do
+  def destroy(pid, secret, vers) do
     
   end
 
@@ -116,6 +129,13 @@ defmodule Ptolemy do
       {Tesla.Middleware.Headers, creds},
       {Tesla.Middleware.JSON, []}
     ])
+  end
+
+  defp get_kv_path(pid, name) do
+    {:ok, pmap} = Server.get_data(pid, :kv_paths)
+    path = 
+      pmap
+      |> Map.fetch!(name)
   end
 
 end
