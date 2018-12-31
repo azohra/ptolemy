@@ -23,7 +23,7 @@ defmodule Ptolemy.Server do
     with {:ok, []} <- validate(config) do
       GenServer.start_link(__MODULE__, config, name: pid)
     else
-      {:error, missing} -> raise @validation_err <> missing
+      {:error, missing} -> raise @validation_err <> "#{missing}"
     end
   end
   
@@ -44,11 +44,15 @@ defmodule Ptolemy.Server do
     end
   end
 
+  def set_data(pid, key, payload) do
+    GenServer.call(pid, {:set, key, payload})
+  end
+
   @doc """
-  Client side function, will retrieve a specific value from the current genserver.
+  Client side function, will set a new value to a specific key in the state.
   """
   def get_data(pid, key) do
-    GenServer.call(pid, {:fetch_conf, key})
+    GenServer.call(pid, {:fetch, key})
   end
 
   @doc """
@@ -67,7 +71,7 @@ defmodule Ptolemy.Server do
     validate(@req, config, {:ok,[]})
   end
 
-  defp validate([], conf, status) do
+  defp validate([], _conf, status) do
     case status do 
       {:ok, []} -> {:ok, []}
       {:error, missing} -> {:error, missing}
@@ -78,11 +82,12 @@ defmodule Ptolemy.Server do
     [head|tail] = req_list
 
     status = Map.has_key?(conf, head)
-
-    if status do
-      validate(tail, conf, {:ok, []})
-    else
-      validate(tail, conf, {:error, missing ++ [head]})
+    
+    case {status, code, missing} do
+      {true, :ok, []} -> validate(tail, conf, {:ok, []})
+      {false, :ok, []} ->  validate(tail, conf, {:error, [Atom.to_string(head)]})
+      {true, :error, _ } ->  validate(tail, conf, {:error, missing})
+      {false, :error, _ } ->  validate(tail, conf, {:error, missing ++ [Atom.to_string(head)]})
     end
   end
 
@@ -142,11 +147,24 @@ defmodule Ptolemy.Server do
   Fetches a specific key from the genServer's state
   """
   @impl true
-  def handle_call({:fetch_conf, key}, _from, state) do
+  def handle_call({:fetch, key}, _from, state) do
     with {:ok, return} <- Map.fetch(state, key) do
       {:reply, {:ok, return}, state}
     else
       _ -> {:reply, {:error, "Not found!"}, state}
+    end
+  end
+
+  @doc """
+  Sets a new value for a specific key in the state
+  """
+  @impl true
+  def handle_call({:set, key, payload}, _from, state) do
+    with {:ok, return} <- Map.fetch(state, key) do
+      nstate = Map.replace!(state, key, payload)
+      {:reply, :ok, nstate}
+    else
+      _ -> {:reply, {:error, "Key Not found!"}, state}
     end
   end
 
