@@ -47,8 +47,8 @@ defmodule Ptolemy.Engines.KV do
   @doc """
   Deletes a specific set of version belonging to a specific secret
   """
-  def delete_latest!(client, path, data, vers) do
-    paylod = %{version: vers}
+  def delete_latest!(client, path, vers) do
+    payload = %{version: vers}
   
     with {:ok, resp} <- delete(client, "#{path}", payload) do
       case {resp.status, resp.body} do
@@ -59,6 +59,10 @@ defmodule Ptolemy.Engines.KV do
            throw "Could not delete version(s) of secret in remote vault server. Error code: #{status}"
       end
     end
+  end
+
+  def destroy!(client, path, vers) do
+    
   end
 end
   

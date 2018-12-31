@@ -26,27 +26,26 @@ defmodule Ptolemy do
   alias Ptolemy.Engines.KV
 
   @doc """
-  Starts a genserver that holds all necessary config data for a remote vault server.
+  Starts a process that holds a specific vault server configuration. This state holds all necessary
+  information to connect, retrieve, update, etc... data on a vault server.
   """
   def start(name, config) do
     Server.start(name, config)
   end
 
-  def kv_read(pid, secret, key, version \\ 0)
-
   @doc """
-  Reads a key from a secret in a remote vault server. This will fetch the specified secret from 
-  the Ptolemy configuration.
+  Reads a specfic key from a vault server. `kv_cread` must have a valid `kv_engine` value in your
+  `config.exs`.
   """
-  def kv_read(pid, secret, key, version) when is_atom(secret) do
-    path = get_kv_path(pid, secret)
+  def kv_cread(pid, engine_name, secret, key, version \\ 0) do
+    path = get_kv_path!(pid, engine_name, secret, "data")
     kv_read(pid, path, key, version)
   end
 
   @doc """
   Reads a key from a secret in a remote vault server.
   """
-  def kv_read(pid, secret_path, key, version) do
+  def kv_read(pid, secret_path, key, version \\ 0) when is_bitstring(secret_path) do
     with map <- kv_fetch(pid, secret_path, true, version),
       {:ok, values} <- Map.fetch(map, key)
     do
@@ -56,15 +55,14 @@ defmodule Ptolemy do
     end
   end
 
-  def kv_fetch(pid, secret, silent \\ false, version \\ 0) 
+  #def kv_fetch(pid, secret, silent \\ false, version \\ 0) 
 
   @doc """
   Fetches a secret from a remote vault server. This will fetch the specified secret from 
   the Ptolemy configuration.
   """
-  def kv_fetch(pid, secret, silent, version) when is_atom(secret) do
-    path = get_kv_path(pid, secret)
-
+  def kv_cfetch(pid, engine_name, secret, silent \\ false, version \\ 0) do
+    path = get_kv_path!(pid, engine_name, secret, "data")
     kv_fetch(pid, path, silent, version)
   end
 
@@ -101,7 +99,7 @@ defmodule Ptolemy do
   def kv_create(pid, secret, payload, cas \\ nil)
 
   def kv_create(pid, secret, payload, cas) when is_atom(secret) do
-    path = get_kv_path(pid, secret)
+   # path = get_kv_path(pid, secret)
     kv_create(pid, secret, payload, cas)
   end
 
@@ -131,11 +129,18 @@ defmodule Ptolemy do
     ])
   end
 
-  defp get_kv_path(pid, name) do
-    {:ok, pmap} = Server.get_data(pid, :kv_paths)
-    path = 
-      pmap
-      |> Map.fetch!(name)
+  defp get_kv_path!(pid, engine_name, secret, operation) do
+    with {:ok, kv_conf} <- Server.get_data(pid, :kv_engine),
+      {:ok, kvname} <- Map.fetch(kv_conf, engine_name),
+      %{engine_path: path, secrets: secrets} <- kvname
+    do
+      {:ok, secret_path} = Map.fetch(secrets, secret)
+
+      "/#{path}#{operation}#{secret_path}"
+    else
+      {:error, "Not found!"} -> throw "#{pid} does not have a kv_engine config"
+      :error -> throw "Could not find engine_name in specified config"
+    end
   end
 
 end
