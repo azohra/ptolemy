@@ -2,13 +2,13 @@
 
 ### ptolemy is still under development!
 
-ptolemy is an application that allows your elixir app to natively integrate to [hashicorp's vault](https://github.com/hashicorp/vault).
+ptolemy is an application that allows your elixir app to use [hashicorp's vault](https://github.com/hashicorp/vault) to store and manage application secrets.
 
 ## Features
 - Authenticates to vault via:
   - **Google Cloud** auth method
   - **App Role** auth method
-- Full KV secret engine support (more to come!)
+- KV V2 secret engine support (more to come!)
 - Authentication through Google's [Cloud IAP](https://cloud.google.com/iap/)
 
 ## Concepts
