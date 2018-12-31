@@ -10,8 +10,8 @@ config :ptolemy, Ptolemy,
     auth_mode: "approle",
     kv_engine: %{
       kv_engine1: %{
-        path: "/secret",
-        secret_paths: %{
+        engine_path: "secret/",
+        secrets: %{
           ptolemy: "/ptolemy"
         }
       }
