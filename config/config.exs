@@ -8,8 +8,13 @@ config :ptolemy, Ptolemy,
   server1: %{
     vault_url: "http://localhost:8200",
     auth_mode: "approle",
-    kv_paths: %{
-      ptolemy: "/secret/data/ptolemy"
+    kv_engine: %{
+      kv_engine1: %{
+        path: "/secret",
+        secret_paths: %{
+          ptolemy: "/ptolemy"
+        }
+      }
     },
     credentials: %{
       role_id: System.get_env("ROLE_ID"),
