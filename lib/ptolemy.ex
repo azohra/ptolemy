@@ -87,38 +87,38 @@ defmodule Ptolemy do
   end
 
   @doc """
+  """
+  def kv_cupdate(pid, engine_name, secret, payload, cas \\ nil) do
+    path = make_kv_path!(pid, engine_name, secret, "data")
+    kv_create(pid, path, payload, cas)
+  end
+
+  @doc """
   Updates a secrets in a remote vault server
   """
   def kv_update(pid, secret, payload, cas \\ nil) do
     kv_create(pid, secret, payload, cas)
   end
 
-  @doc """
-  Creates a new secret in a remote vault server
-  """
-  def kv_create(pid, secret, payload, cas \\ nil)
-
-  def kv_create(pid, secret, payload, cas) when is_atom(secret) do
-   # path = get_kv_path(pid, secret)
+  def kv_ccreate(pid, engine_name, secret, payload, cas \\ nil) do
+    path = make_kv_path!(pid, engine_name, secret, "data")
     kv_create(pid, secret, payload, cas)
   end
 
-  def kv_create(pid, secret, payload, cas) do
+  def kv_create(pid, secret, payload, cas \\ nil) do
     client = create_client(pid)
     KV.create_secret!(client, secret, payload, cas)
   end
 
-
-
-  def kv_delete(pid, secret, opt \\ []) do
+  def kv_delete(pid, secret, vers \\ []) do
     
   end
 
-  def destroy(pid, secret, vers) do
+  def destroy(pid, secret, vers \\ []) do
     
   end
 
-  def create_client(pid) do
+  defp create_client(pid) do
     creds = Server.fetch_credentials(pid)
     {:ok, url} = Server.get_data(pid, :vault_url)
 
@@ -129,18 +129,34 @@ defmodule Ptolemy do
     ])
   end
 
-  defp get_kv_path!(pid, engine_name, secret, operation) do
+  defp get_kv_path!(pid, engine_name, secret, operation) when is_atom(secret) do
     with {:ok, kv_conf} <- Server.get_data(pid, :kv_engine),
       {:ok, kvname} <- Map.fetch(kv_conf, engine_name),
       %{engine_path: path, secrets: secrets} <- kvname
     do
       {:ok, secret_path} = Map.fetch(secrets, secret)
 
-      "/#{path}#{operation}#{secret_path}"
+      make_path!(pid, path, secret_path, operation)
     else
       {:error, "Not found!"} -> throw "#{pid} does not have a kv_engine config"
       :error -> throw "Could not find engine_name in specified config"
     end
+  end
+
+  defp get_kv_path!(pid, engine_name, secret, operation) when is_bitstring(secret) do
+    with {:ok, kv_conf} <- Server.get_data(pid, :kv_engine),
+      {:ok, kvname} <- Map.fetch(kv_conf, engine_name),
+      %{engine_path: path, secrets: _} <- kvname
+    do
+      make_path!(pid, path, secret, operation)
+    else
+      {:error, "Not found!"} -> throw "#{pid} does not have a kv_engine config"
+      :error -> throw "Could not find engine_name in specified config"
+    end
+  end
+
+  defp make_path!(pid, engine_path, secret_path, operation) do
+    "/#{engine_path}#{operation}#{secret_path}"
   end
 
 end
