@@ -80,7 +80,6 @@ defmodule Ptolemy do
       true -> 
         resp
         |> Map.get("data")
-        |> Map.get("data")
       false ->
         resp
     end
