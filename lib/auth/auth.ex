@@ -24,10 +24,17 @@ defmodule Ptolemy.Auth do
       {"GCP", _ } ->  
         role = opt |> Keyword.get(:role, "default")
         google_svc = credential |> Map.fetch!(:creds) |> Gauth.parse_svc()
-        iap_tok = if iap, do: [Gauth.gen_iap_token(google_svc, exp)], else: []
+        iap_tok = 
+          if iap do
+            client_id = credential |> Map.fetch!(:target_audience)
+            role = 
+            [Gauth.gen_iap_token(google_svc, client_id, exp)]
+          else
+            []
+          end
         toks =
           google_svc
-          |> google_auth!(url, exp, role, iap_tok)
+          |> google_auth!(url, exp, role, iap_tok, [role: role ])
         [toks | iap_tok]
 
       {"approle", _ } -> 
@@ -50,21 +57,26 @@ defmodule Ptolemy.Auth do
   @doc """
   Authenticates using the gcp authentication method.
   """
-  def google_auth!(creds, url, exp, role, iap_tok, opt \\ []) do
-    
+  def google_auth!(creds, url, exp, role, iap_tok, opt \\ []) do 
+    str = opt |> Keyword.get(:role, "default") 
+
     vault_claim = %{
       sub: Map.fetch!(creds, "client_email"),
-      aud: opt |> Keyword.get(:role, "default"),
-      exp: opt |> Keyword.get(:exp, @default_exp)
+      aud:  "vault/#{str}",
+      exp: exp + Joken.current_time()
     }
-    |> IO.inspect
     |> Jason.encode!
 
     signed_jwt =
       creds
       |> Gauth.gen_signed_jwt!(vault_claim, exp)
 
-    auth!(signed_jwt, url, "/auth/gcp/login", iap_tok)
+    payload = %{
+      role:  "#{str}",
+      jwt: "#{signed_jwt}"
+    }
+
+    auth!(payload, url, "/auth/gcp/login", iap_tok)
   end
 
   @doc """
@@ -72,10 +84,10 @@ defmodule Ptolemy.Auth do
   """
   def check_health(client) do
     with {:ok, resp} <- get(client, "/sys/health") do
-      case resp.status do 
-        200 -> :ok
-        503 -> :sealed
-        _ -> :error
+      case {resp.status, resp.body} do 
+        {200..299, _ } -> :ok
+        {503, _ } -> :sealed
+        {400..499, resp} -> {:error, {resp.status, resp.body}}
       end
     end
   end
@@ -91,8 +103,7 @@ defmodule Ptolemy.Auth do
       {Tesla.Middleware.JSON, []}
     ])
 
-    with :ok <- check_health(client),
-      {:ok, resp} <- post(client, auth_endp, payload) 
+    with {:ok, resp} <- post(client, auth_endp, payload) 
     do
       case {resp.status, resp.body} do
         {status, body} when status in 200..299 ->
@@ -103,11 +114,13 @@ defmodule Ptolemy.Auth do
           {"X-Vault-Token", tok}
 
         {status, body} ->
-          throw {:error, "Authentication failed, Status:#{status} with error: #{body}"}
+          message = Map.fetch!(body, "errors")
+          throw {:error, "Authentication failed, Status:#{status} with error: #{message}"}
       end
     else
       :sealed -> raise @sealed_msg
-      _ -> throw {:error, @vault_health_err}
+      {:error, {err, resp}} -> 
+        throw {:error, @vault_health_err <> " #{err}"}
     end
   end
 end
