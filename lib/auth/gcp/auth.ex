@@ -3,7 +3,7 @@ defmodule Ptolemy.Google.Auth do
   Defines google api authentication
   """
 
-  alias Ptolemy.Google.JWT, as: JWT
+  alias Ptolemy.Google.Auth.JWT, as: JWT
   use Tesla
 
   @google_auth_url "https://www.googleapis.com"
@@ -16,10 +16,10 @@ defmodule Ptolemy.Google.Auth do
   Returns a tuple following this format {"Authorization", "Bearer <TOKEN>"}, this can be inserted on tesla's
   middleware headers. The tokens are only valid for 59 minutes - as per .
   """
-  def gen_api_token(exp) do
+  def gen_api_token(creds, exp) do
     base = %{scope: @google_gcp_scope}
 
-    gen_tok("access_token", base, exp)
+    gen_tok(creds, "access_token", base, exp)
   end
 
   @doc """
@@ -27,22 +27,18 @@ defmodule Ptolemy.Google.Auth do
   Returns a tuple following this format {"Authorization", "Bearer <TOKEN>"}, this can be inserted on tesla's
   middleware headers.
   """
-  def gen_iap_token(exp) do
-    client_id =
-    Application.get_env(:iris, :google, :client_id)
-    |> Keyword.get(:client_id, "")
-
+  def gen_iap_token(creds, client_id, exp) do
     base = %{target_audience: client_id}
 
-    gen_tok("id_token", base, exp)
+    gen_tok(creds, "id_token", base, exp)
   end
 
   @doc """
   Helper func to generate a signed jwt used to submit to google's api.
   """
-  defp gen_tok(key, base_claim, exp) do
+  defp gen_tok(creds, key, base_claim, exp) do
     token =
-      parse_svc(key)
+      creds
       |> JWT.create_jwt(base_claim, exp)
       |> send_jwt!()
       |> Map.fetch!(key)
@@ -66,7 +62,7 @@ defmodule Ptolemy.Google.Auth do
   def gen_signed_jwt!(svc, claim, exp) do
     sub = svc |> Map.fetch!("client_email")
     project = svc |> Map.fetch!("project_id")
-    api_token = gen_api_token(exp)
+    api_token = gen_api_token(svc, exp)
 
     #This is the json to be sent to google
     payload = %{
@@ -90,7 +86,8 @@ defmodule Ptolemy.Google.Auth do
             |> Map.fetch!("signedJwt")
 
           {status, body} ->
-            throw {:error, "Api denied the JWT #{body}"}
+            message = Map.fetch!(body, "error") |>  Map.fetch!("message")
+            throw {:error, "Api denied the JWT: #{message}"}
           end
       end
   end
@@ -134,9 +131,7 @@ defmodule Ptolemy.Google.Auth do
   Unpacks and decode a string to a map
   """
   defp serialize(svc) do
-    svc
-    |> Poison.decode()
-    |> unpack()
+    Jason.decode!(svc)
   end
 
   @doc """

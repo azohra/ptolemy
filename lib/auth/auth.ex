@@ -3,7 +3,7 @@ defmodule Ptolemy.Auth do
   `Ptolemy.Auth` provides authentication implementation to a remote vault server.
   """
   use Tesla
-  alias Ptolemy.Auth.GCP.Auth, as: Gauth
+  alias Ptolemy.Google.Auth, as: Gauth
 
   @sealed_msg "The vault server is sealed, something terrible has happened!"
   @vault_health_err "Seems like the remote vault server is having issues right now contact the admin!"
@@ -18,19 +18,21 @@ defmodule Ptolemy.Auth do
     - Active Identity Aware Proxy; `iap:` can be either `true` or `false`
   """
   def authenticate!(credential, auth_mode, url, opt \\ []) do
-    iap = opt |> Keyword.get(:iap, false)
+    iap = opt |> Keyword.get(:iap_on, false)
     exp = opt |> Keyword.get(:exp, @default_exp)
-    iap_tok = if iap, do: [Gauth.gen_iap_token(exp)], else: []
     case {auth_mode, iap} do
       {"GCP", _ } ->  
         role = opt |> Keyword.get(:role, "default")
+        google_svc = credential |> Map.fetch!(:creds) |> Gauth.parse_svc()
+        iap_tok = if iap, do: [Gauth.gen_iap_token(google_svc, exp)], else: []
         toks =
-          credential
-          |> Gauth.parse_svc()
+          google_svc
           |> google_auth!(url, exp, role, iap_tok)
         [toks | iap_tok]
 
       {"approle", _ } -> 
+        creds = Keyword.get(opt, :iap_creds, [])
+        iap_tok = if iap, do: [Gauth.gen_iap_token(creds, exp)], else: []
         toks =
           credential
           |> approle_auth!(url, iap_tok)
@@ -49,14 +51,14 @@ defmodule Ptolemy.Auth do
   Authenticates using the gcp authentication method.
   """
   def google_auth!(creds, url, exp, role, iap_tok, opt \\ []) do
-    creds = Gauth.parse_svc(creds)
     
     vault_claim = %{
-      sub: Map.fetch!(creds, :client_email),
+      sub: Map.fetch!(creds, "client_email"),
       aud: opt |> Keyword.get(:role, "default"),
-      exp: opt |> Keyword.get(:exp)
+      exp: opt |> Keyword.get(:exp, @default_exp)
     }
-    |> Poison.encode!
+    |> IO.inspect
+    |> Jason.encode!
 
     signed_jwt =
       creds

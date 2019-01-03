@@ -136,7 +136,7 @@ defmodule Ptolemy do
     do
       {:ok, secret_path} = Map.fetch(secrets, secret)
 
-      make_path!(pid, path, secret_path, operation)
+      make_kv_path!(pid, path, secret_path, operation)
     else
       {:error, "Not found!"} -> throw "#{pid} does not have a kv_engine config"
       :error -> throw "Could not find engine_name in specified config"
@@ -148,14 +148,14 @@ defmodule Ptolemy do
       {:ok, kvname} <- Map.fetch(kv_conf, engine_name),
       %{engine_path: path, secrets: _} <- kvname
     do
-      make_path!(pid, path, secret, operation)
+      make_kv_path!(pid, path, secret, operation)
     else
       {:error, "Not found!"} -> throw "#{pid} does not have a kv_engine config"
       :error -> throw "Could not find engine_name in specified config"
     end
   end
 
-  defp make_path!(pid, engine_path, secret_path, operation) do
+  defp make_kv_path!(pid, engine_path, secret_path, operation) do
     "/#{engine_path}#{operation}#{secret_path}"
   end
 

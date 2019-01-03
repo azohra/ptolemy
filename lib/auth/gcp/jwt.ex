@@ -1,4 +1,4 @@
-defmodule Ptolemy.Auth.GCP.JWT do
+defmodule Ptolemy.Google.Auth.JWT do
   @moduledoc """
   Client to create jwt for authenticating to google's apis
   """

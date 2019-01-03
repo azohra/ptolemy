@@ -24,7 +24,8 @@ defmodule Ptolemy.MixProject do
       {:tesla, "~> 1.2.1"},
       {:joken, "~> 1.5"},
       {:hackney, "~> 1.6"},
-      {:jason, ">= 1.0.0"}
+      {:jason, ">= 1.0.0"},
+      {:poison, "~> 3.1"}
     ]
   end
 end
