@@ -1,20 +1,18 @@
 defmodule Ptolemy.Server do
   @moduledoc """
-  Ptolemy server implements a genserver responsible in keeping a remote vault server's configuration data and 
-  authentication data. For efficientcy reason, the authentication data which contains all necessary tokens to 
-  authenticate through vault and IAP (if specified) are cached inside the state of the GenServer. This data is
-  purged after EXP 
+  Ptolemy server is responsible in keeping a remote vault server's configuration data and  authentication data. 
   """
+
   use GenServer
   alias Ptolemy.Auth
   require Logger
 
-  @default_exp 900 #Default expiration for tokens
+  @default_exp 900 # Default expiration for tokens (15 min in seconds)
   @validation_err "Config error! Missing: "
   @req [:vault_url, :auth_mode, :credentials]
 
   @doc """
-  Client side api to start a genserver. 
+  Starts a ptolemy server that will hold state.
   """
   def start(pid, server) do
     config = 
@@ -29,12 +27,11 @@ defmodule Ptolemy.Server do
   end
   
   @doc """
-  Fetches access tokens. The access tokens will be returned as list of the proper HTTP headers. These can
-  be inserted inside Tesla's middleware Headers.
+  Fetches access tokens needed to authenticate request to vault and IAP (if enabled). Returns a list of tuple(s)
+  containing the tokens.
   """
   def fetch_credentials(pid) do
     with {state, tokens} <- GenServer.call(pid, :fetch_creds)
-    #CHECK VALIDITY OF THE TOKEN TO SEE IF IT WILL EXPIRE SOON    
     do
       case {state, tokens} do
         {:ok, tokens} -> tokens
@@ -45,19 +42,22 @@ defmodule Ptolemy.Server do
     end
   end
 
+  @doc """
+  Sets data within a ptolemy state.
+  """
   def set_data(pid, key, payload) do
     GenServer.call(pid, {:set, key, payload})
   end
 
   @doc """
-  Client side function, will set a new value to a specific key in the state.
+  Get a specific key within a ptolemy state.
   """
   def get_data(pid, key) do
     GenServer.call(pid, {:fetch, key})
   end
 
   @doc """
-  Client side dump function, will retrieve the state of the current genserver.
+  Dumps entire state within the ptolemy state.
   """
   def dump(pid) do
     GenServer.call(pid, :dump)
@@ -68,10 +68,13 @@ defmodule Ptolemy.Server do
   be presents in the configuration before it can attempt to make a connection with a remote vault
   server.
   """
-  def validate(config) do
+  defp validate(config) do
     validate(@req, config, {:ok,[]})
   end
 
+  @doc """
+  Validate helper functions.
+  """
   defp validate([], _conf, status) do
     case status do 
       {:ok, []} -> {:ok, []}
@@ -93,7 +96,7 @@ defmodule Ptolemy.Server do
   end
 
   @doc """
-  Returns an initilized configuration for a remote vault server.
+  Handles initilization of the ptolemy server.
   """
   @impl true
   def init(state) do
@@ -110,7 +113,8 @@ defmodule Ptolemy.Server do
   end
 
   @doc """
-  Handles initialization of the authentication process. This will return 
+  Handles initialization of the authentication process. This will return the necessary HTTP header tokens to the
+  caller additionally these tokens will be automatically purged after `exp` seconds 
   """
   @impl true
   def handle_call(:auth, _from, state) do
@@ -132,8 +136,7 @@ defmodule Ptolemy.Server do
   end
 
   @doc """
-  Fetches the access tokens and vault tokens inorder to make a call. This will return a list of tuples containing
-  the relevant http headers, needed to authenticate to a remote vault server based on this GenServer's config.
+  Fetches all necessary tokens needed to send request to a remote vautl server.
   """
   @impl true
   def handle_call(:fetch_creds, _from, state) do
@@ -145,7 +148,7 @@ defmodule Ptolemy.Server do
   end
 
   @doc """
-  Fetches a specific key from the genServer's state
+  Fetches a specific key's value from the state
   """
   @impl true
   def handle_call({:fetch, key}, _from, state) do
@@ -157,7 +160,7 @@ defmodule Ptolemy.Server do
   end
 
   @doc """
-  Sets a new value for a specific key in the state
+  Sets a new value for a specific key in the state.
   """
   @impl true
   def handle_call({:set, key, payload}, _from, state) do
@@ -177,10 +180,10 @@ defmodule Ptolemy.Server do
   end
 
   @doc """
-  Prevents credentials from being dumped on the crash logs.
+  Formats the status of the current ptolemy state, this is done to prevent 
   """
   def format_status(:terminate, pdict_and_state) do
-    Logger.error "Ptolemy server terminated"
+    Logger.error "Ptolemy server abrubtly terminated"
   end
 end
   
