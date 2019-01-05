@@ -7,6 +7,7 @@ defmodule Ptolemy.Server do
   """
   use GenServer
   alias Ptolemy.Auth
+  require Logger
 
   @default_exp 900 #Default expiration for tokens
   @validation_err "Config error! Missing: "
@@ -173,6 +174,13 @@ defmodule Ptolemy.Server do
   """
   def handle_call(:dump, _from, state) do
     {:reply, {:ok, state}, state}
+  end
+
+  @doc """
+  Prevents credentials from being dumped on the crash logs.
+  """
+  def format_status(:terminate, pdict_and_state) do
+    Logger.error "Ptolemy server terminated"
   end
 end
   
