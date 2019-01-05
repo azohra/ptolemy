@@ -27,8 +27,7 @@ defmodule Ptolemy.Auth do
         iap_tok = 
           if iap do
             client_id = credential |> Map.fetch!(:target_audience)
-            role = 
-            [Gauth.gen_iap_token(google_svc, client_id, exp)]
+            role = [Gauth.gen_iap_token(google_svc, client_id, exp)]
           else
             []
           end
@@ -39,7 +38,14 @@ defmodule Ptolemy.Auth do
 
       {"approle", _ } -> 
         creds = Keyword.get(opt, :iap_creds, [])
-        iap_tok = if iap, do: [Gauth.gen_iap_token(creds, exp)], else: []
+        iap_tok = 
+          if iap do
+            google_svc = credential |> Map.fetch!(:creds) |> Gauth.parse_svc()
+            client_id = credential |> Map.fetch!(:target_audience)
+            role = [Gauth.gen_iap_token(google_svc, client_id, exp)]
+          else
+            []
+          end
         toks =
           credential
           |> approle_auth!(url, iap_tok)
