@@ -23,7 +23,7 @@ Ptolemy is available on hex you can install it by following these steps:
 ```elixir
 def deps do
   [
-    {:ptolemy, "~> 0.1.0-rc"}
+    {:ptolemy, "~> 0.1.0-alpha"}
   ]
 end
 ```
