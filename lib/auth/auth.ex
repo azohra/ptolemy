@@ -1,6 +1,7 @@
 defmodule Ptolemy.Auth do
   @moduledoc """
-  `Ptolemy.Auth` provides authentication implementation to a remote vault server.
+  `Ptolemy.Auth` provides authentication implementation to a remote vault server. As of the current version of this
+  documentation the only supported auth methods that ptolemy supports is GCP and Approle auth methods.
   """
   use Tesla
   alias Ptolemy.Google.Auth, as: Gauth
@@ -27,7 +28,7 @@ defmodule Ptolemy.Auth do
         iap_tok = 
           if iap do
             client_id = credential |> Map.fetch!(:target_audience)
-            role = [Gauth.gen_iap_token(google_svc, client_id, exp)]
+            [Gauth.gen_iap_token(google_svc, client_id, exp)]
           else
             []
           end
@@ -42,7 +43,7 @@ defmodule Ptolemy.Auth do
           if iap do
             google_svc = credential |> Map.fetch!(:creds) |> Gauth.parse_svc()
             client_id = credential |> Map.fetch!(:target_audience)
-            role = [Gauth.gen_iap_token(google_svc, client_id, exp)]
+            [Gauth.gen_iap_token(google_svc, client_id, exp)]
           else
             []
           end
@@ -86,14 +87,15 @@ defmodule Ptolemy.Auth do
   end
 
   @doc """
-  Check the status of the remote vault 
+  Check the status of the remote vault. 
   """
   def check_health(client) do
-    with {:ok, resp} <- get(client, "/sys/health") do
-      case {resp.status, resp.body} do 
-        {200..299, _ } -> :ok
-        {503, _ } -> :sealed
-        {400..499, resp} -> {:error, {resp.status, resp.body}}
+    with {:ok, resp} <- get(client, "/sys/health"),
+      {:ok, sealed} <- Map.fetch(resp.body, "sealed") 
+    do
+      case sealed do 
+        false -> :ok
+        true -> :sealed
       end
     end
   end
@@ -103,13 +105,14 @@ defmodule Ptolemy.Auth do
   """
   defp auth!(payload, url, auth_endp, iap_tok, opt \\ []) do
     client =
-    Tesla.client([
-      {Tesla.Middleware.BaseUrl, "#{url}/v1"},
-      {Tesla.Middleware.Headers, iap_tok},
-      {Tesla.Middleware.JSON, []}
-    ])
+      Tesla.client([
+        {Tesla.Middleware.BaseUrl, "#{url}/v1"},
+        {Tesla.Middleware.Headers, iap_tok},
+        {Tesla.Middleware.JSON, []}
+      ])
 
-    with {:ok, resp} <- post(client, auth_endp, payload) 
+    with {:ok, resp} <- post(client, auth_endp, payload),
+        :ok <- check_health(client)
     do
       case {resp.status, resp.body} do
         {status, body} when status in 200..299 ->
@@ -125,8 +128,6 @@ defmodule Ptolemy.Auth do
       end
     else
       :sealed -> raise @sealed_msg
-      {:error, {err, resp}} -> 
-        throw {:error, @vault_health_err <> " #{err}"}
     end
   end
 end
