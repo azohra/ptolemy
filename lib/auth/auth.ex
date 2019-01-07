@@ -1,6 +1,6 @@
 defmodule Ptolemy.Auth do
   @moduledoc """
-  `Ptolemy.Auth` provides authentication implementation to a remote vault server. As of the current version of this
+  `Ptolemy.Auth` provides authentication implementations to a remote vault server. As of the current version of this
   documentation the only supported auth methods that ptolemy supports is GCP and Approle auth methods.
   """
   use Tesla
@@ -18,10 +18,12 @@ defmodule Ptolemy.Auth do
   Currently available options are:
     - `iap_on`
       - This option can be set to either true or false. Setting it to true will allow your request to pass through
-      Google's Identity Aware Proxy
+      Google's Identity Aware Proxy.
     - `exp`
       - The expiry that the access tokens will be valid for. This is depended on the remote vault server's configuration
-      and whether GCP auth is being performed. Generally
+      and whether GCP auth is being performed. 
+      - Keep in mind Google does not allow you to create tokens that have an exp value larger than 3600 seconds (1 hour)
+      - Vault on the other hand is configurable but generally speaking has a validity period of atleast 900 seconds (15 min).
   """
   def authenticate!(credential, auth_mode, url, opt \\ []) do
     iap = opt |> Keyword.get(:iap_on, false)
