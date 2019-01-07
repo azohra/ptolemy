@@ -22,10 +22,6 @@ config :ptolemy, Ptolemy,
     },
     opts: [
       role: "default",
-      remote_server_cert: """
-      -----BEGIN CERTIFICATE-----
-      -----END CERTIFICATE-----
-      """,
       iap_on: false,
       exp: 6000
     ]
