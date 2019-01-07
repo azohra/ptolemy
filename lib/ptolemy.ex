@@ -37,7 +37,7 @@ defmodule Ptolemy do
   Reads a specfic key from a vault server. `kv_cread` must have a valid `kv_engine` value in your
   `config.exs`.
   """
-  def kv_cread(pid, engine_name, secret, key, version \\ 0) do
+  def read(pid, engine_name, secret, key, version \\ 0) do
     path = get_kv_path!(pid, engine_name, secret, "data")
     kv_read(pid, path, key, version)
   end
@@ -70,7 +70,7 @@ defmodule Ptolemy do
   Fetches all values of a secret from a remote vault server. Enabling the silent option 
   will mute the response to only contain the secret's key values.
   """
-  def kv_fetch(pid, secret, silent, version) do
+  def kv_fetch(pid, secret, silent \\ false, version \\ 0) do
     client = create_client(pid)
     opts = [version: version]
 
@@ -79,6 +79,7 @@ defmodule Ptolemy do
     case silent do
       true -> 
         resp
+        |> Map.get("data")
         |> Map.get("data")
       false ->
         resp
@@ -109,12 +110,14 @@ defmodule Ptolemy do
     KV.create_secret!(client, secret, payload, cas)
   end
 
-  def kv_delete(pid, secret, vers \\ []) do
-    
+  def kv_delete(pid, engine_path, secret, vers \\ []) do
+    client = create_client(pid)
+    KV.delete!(client, secret, vers)
   end
 
   def destroy(pid, secret, vers \\ []) do
-    
+    client = create_client(pid)
+    KV.destroy!(client, secret, vers)
   end
 
   defp create_client(pid) do
@@ -145,7 +148,7 @@ defmodule Ptolemy do
   defp get_kv_path!(pid, engine_name, secret, operation) when is_bitstring(secret) do
     with {:ok, kv_conf} <- Server.get_data(pid, :kv_engine),
       {:ok, kvname} <- Map.fetch(kv_conf, engine_name),
-      %{engine_path: path, secrets: _} <- kvname
+      %{engine_path: path, secrets: _ } <- kvname
     do
       make_kv_path!(pid, path, secret, operation)
     else
