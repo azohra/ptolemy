@@ -16,7 +16,12 @@ defmodule Ptolemy.Auth do
   returned is compatible with tesla's middleware adapters.
   
   Currently available options are:
-    - Active Identity Aware Proxy; `iap:` can be either `true` or `false`
+    - `iap_on`
+      - This option can be set to either true or false. Setting it to true will allow your request to pass through
+      Google's Identity Aware Proxy
+    - `exp`
+      - The expiry that the access tokens will be valid for. This is depended on the remote vault server's configuration
+      and whether GCP auth is being performed. Generally
   """
   def authenticate!(credential, auth_mode, url, opt \\ []) do
     iap = opt |> Keyword.get(:iap_on, false)
