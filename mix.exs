@@ -4,7 +4,7 @@ defmodule Ptolemy.MixProject do
   def project do
     [
       app: :ptolemy,
-      version: "0.1.0-alpha",
+      version: "0.1.0",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -12,9 +12,9 @@ defmodule Ptolemy.MixProject do
       name: "Ptolemy",
       source_url: "https://github.com/azohra/ptolemy",
       docs: [
-        main: "Ptolemy", # The main page in the docs
-        logo: "path/to/logo.png",
-        extras: ["README.md"]
+        main: "README.md", # The main page in the docs
+        logo: "assets/logo.svg",
+        extras: ["README.md": [filename: "README.md", title: "Ptolemy"]]
       ]
     ]
   end
@@ -32,7 +32,8 @@ defmodule Ptolemy.MixProject do
       {:tesla, "~> 1.2.1"},
       {:joken, "~> 1.5"},
       {:hackney, "~> 1.6"},
-      {:jason, ">= 1.0.0"}
+      {:jason, ">= 1.0.0"},
+      {:ex_doc, "~> 0.19", only: :dev, runtime: false}
     ]
   end
 
