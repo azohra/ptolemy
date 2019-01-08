@@ -9,11 +9,9 @@ Ptolemy is an application that allows your elixir app to use [hashicorp's vault]
 - Authenticates to vault via:
   - **Google Cloud** auth method
   - **Approle** auth method
+
 - KV V2 secret engine support (more to come!)
 - Authentication through Google's [Cloud IAP](https://cloud.google.com/iap/)
-
-## Concepts
-Ptolemy requires you to reorganize your vault KV secrets in a matter that treats secrets as being part of your application.
 
 ## Installation
 Ptolemy is available on hex you can install it by following these steps:
@@ -22,14 +20,14 @@ Ptolemy is available on hex you can install it by following these steps:
 ```elixir
 def deps do
   [
-    {:ptolemy, "~> 0.1.0-alpha"}
+    {:ptolemy, "~> 0.1.0"}
   ]
 end
 ```
 2. Run `mix deps.get && mix deps.compile`
 
 ## Usage
-You will first need to edit your `config/config.exs` to include a configuration block such as:
+You will first need to edit your `config/config.exs` to include a configuration (visit `Ptolemy` module to find more configuration options) block such as:
 ```elixir
 config :ptolemy, Ptolemy,
   server1: %{
@@ -48,7 +46,6 @@ config :ptolemy, Ptolemy,
       secret_id: System.get_env("SECRET_ID")
     },
     opts: [
-      role: "default",
       iap_on: false,
       exp: 6000
     ]
@@ -56,7 +53,7 @@ config :ptolemy, Ptolemy,
   server2: %{...}
   ```
 
-  It is recommended that you start a ptolemy process via a suppervied process such as:
+  It is recommended that you start a ptolemy process via a supervised process such as:
   ```elixir
   def application do
     worker(Ptolemy, [:server1]),
@@ -66,14 +63,14 @@ config :ptolemy, Ptolemy,
   ```elixir
   iex(1)> {:ok, server} = Ptolemy.start(:production, :server1)
   {:ok, <#PID<0.213.0>}}
-  iex(2)> server |> Ptolemy.kv_read(:kv_engine1, :ptolemy, "foo")
+  iex(2)> server |> Ptolemy.kv_cread(:kv_engine1, :ptolemy, "foo")
   {:ok, "NsSgY+HlbriOyWucdHJk+7jn0k3wZ9lf/8JOtXpr9cc="} 
   # not a real secret, or is it???? 乁( ͡° ͜ʖ ͡°)ㄏ
+  iex(3)> server |> Ptolemy.kv_read("secret/data/ptolemy", "foo")
+  {:ok, "NsSgY+HlbriOyWucdHJk+7jn0k3wZ9lf/8JOtXpr9cc="} 
   ```
-  More configuration options and general architecture can be found in the hex docs.
 
-  ## Development
-
+## Development
   Running a local dev environment of ptolemy requires:
   - JQ
   - Docker and docker-compose

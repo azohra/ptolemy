@@ -1,27 +1,70 @@
 defmodule Ptolemy do
   @moduledoc """
-  Ptolemy is an elixir client for Hashicorp's Vault. 
+  `Ptolemy` provides client side functions calls to fetch, sets and update secrets within a remote vault server.
 
-  These are the configuration option available:
-  Required:
-    - `vault_url` :: String
-      - a
-    - `credentials` :: Map
-    - `kv_path` :: String
-    - `auth_mode` :: String
-      - Authentication mode. 
+  ## Configuration
+    In order to properly use ptolemy, you must properly set a ptolemy configuration block.
+
+    The available configuration option are as follows:
+    - `:vault_url` (Required) - The url of the remote vault server.
+    - `:auth_mode` (Required) - The authentication method that ptolemy will try to do. As of `0.1.0`, `"GCP"` and `"approle"` are the only supported authentication methods.
+    - `:kv_engine` ::map - The kv engine block configuration, all your kv configuration should be store in here.
+      - `:engine_path` ::string - The engine's path, always need to start with the name and end with a `/`.
+    - `:credentials`
+    - `:opts`
   
-  Optional:
-    - `iap_on` :: Bool
-    - `exp` :: Integer
-    - `remote_server_cert` :: String
-      - x509 cert in PEM format. Should be used if your remote vault server is using a self signed certificate.
-    - `role` :: String 
-      - The vault role that will be used when authenticating to the remote vault server. This is required if
-      the `auth_mode` is set to "GCP".
-  """
-  use Tesla
+  ## Configuration Examples: 
+    - For an approle configuration
+    ```elixir
+    production: %{
+      vault_url: "http://localhost:8200",
+      auth_mode: "approle",
+      kv_engine: %{
+        kv_engine1: %{
+          engine_path: "secret/",
+          secrets: %{
+            ptolemy: "/ptolemy"
+          }
+        }
+      },
+      credentials: %{
+        role_id: System.get_env("ROLE_ID"),
+        secret_id: System.get_env("SECRET_ID")
+      },
+      opts: [
+        iap_on: false,
+        exp: 6000
+      ]
+    }
+    ```
+    - For a GCP configuration
+    ```elixir
+    production: %{
+      vault_url: "http://localhost:8200",
+      auth_mode: "GCP",
+      kv_engine: %{
+        kv_engine1: %{
+          engine_path: "secret/",
+          secrets: %{
+            ptolemy: "/ptolemy"
+          }
+        }
+      },
+      credentials: %{
+        svc_acc: System.get_env("GOOGLE_SVC_ACC"),
+        target_audience: System.get_env("TARGET_AUD")
+      },
+      opts: [
+        iap_on: false,
+        exp: 6000
+      ]
+    }
+    ```
 
+  ## Gotchas
+    If IAP is enabled via `:iap_on` option, you must provide a GCP service account credential with access to the IAP resource
+    aaaa
+  """
   alias Ptolemy.Server
   alias Ptolemy.Engines.KV
 
@@ -37,7 +80,7 @@ defmodule Ptolemy do
   Reads a specfic key from a vault server. `kv_cread` must have a valid `kv_engine` value in your
   `config.exs`.
   """
-  def read(pid, engine_name, secret, key, version \\ 0) do
+  def kv_cread(pid, engine_name, secret, key, version \\ 0) do
     path = get_kv_path!(pid, engine_name, secret, "data")
     kv_read(pid, path, key, version)
   end
@@ -51,11 +94,9 @@ defmodule Ptolemy do
     do
       {:ok, values}
     else
-      :error ->{:error, "Could not find: #{key} in the remote vault server"}
+      :error -> {:error, "Could not find: #{key} in the remote vault server"}
     end
   end
-
-  #def kv_fetch(pid, secret, silent \\ false, version \\ 0) 
 
   @doc """
   Fetches a secret from a remote vault server. This will fetch the specified secret from 
@@ -130,6 +171,7 @@ defmodule Ptolemy do
       {Tesla.Middleware.JSON, []}
     ])
   end
+
 
   defp get_kv_path!(pid, engine_name, secret, operation) when is_atom(secret) do
     with {:ok, kv_conf} <- Server.get_data(pid, :kv_engine),

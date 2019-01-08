@@ -4,7 +4,6 @@ defmodule Ptolemy.Google.Auth do
   """
 
   alias Ptolemy.Google.Auth.JWT, as: JWT
-  use Tesla
 
   @google_auth_url "https://www.googleapis.com"
   @google_iam_auth "https://iam.googleapis.com"
@@ -46,6 +45,9 @@ defmodule Ptolemy.Google.Auth do
     {"Authorization", "Bearer #{token}"}
   end
 
+  @doc """
+  Creates a tesla client to auth in the google apis
+  """
   def client do
     Tesla.client([
       {Tesla.Middleware.BaseUrl, @google_auth_url},
@@ -79,7 +81,7 @@ defmodule Ptolemy.Google.Auth do
         {Tesla.Middleware.JSON, []}
       ])
 
-      with {:ok, resp} <- post(client, "/v1/projects/#{project}/serviceAccounts/#{sub}:signJwt", payload) do
+      with {:ok, resp} <- Tesla.post(client, "/v1/projects/#{project}/serviceAccounts/#{sub}:signJwt", payload) do
         case {resp.status, resp.body} do
           {status, body} when status in 200..299 ->
             body
@@ -93,10 +95,19 @@ defmodule Ptolemy.Google.Auth do
   end
 
   @doc """
-  Sends a newly created JWT to the google auth endpoint, depending on the claim type we will either get:
-  - Access token -> used authenticate through the google api
-  - id_token -> used to authenticate through IAP
+  Gets a google svc account specified from the config
   """
+  def parse_svc(creds) do
+    svc =
+      creds
+      |> Base.url_decode64()
+      |> unpack()
+      |> serialize()
+  end
+
+  # Sends a newly created JWT to the google auth endpoint, depending on the claim type we will either get:
+  # - Access token -> used authenticate through the google api
+  # - id_token -> used to authenticate through IAP
   defp send_jwt!(jwt) do
     goog = client()
 
@@ -105,7 +116,7 @@ defmodule Ptolemy.Google.Auth do
       grant_type: @google_grant_type
   }
 
-    with {:ok, resp} <- post(goog, "/oauth2/v4/token", params) do
+    with {:ok, resp} <- Tesla.post(goog, "/oauth2/v4/token", params) do
       case {resp.status, resp.body} do
         {status, body} when status in 200..299 ->
           body
@@ -117,27 +128,12 @@ defmodule Ptolemy.Google.Auth do
     end
   end
 
-  @doc """
-  Gets a google svc account specified from the config
-  """
-  def parse_svc(creds) do
-    svc =
-      creds
-      |> Base.url_decode64()
-      |> unpack()
-      |> serialize()
-  end
-
-  @doc """
-  Unpacks and decode a string to a map
-  """
+  # Unpacks and decode a string to a map
   defp serialize(svc) do
     Jason.decode!(svc)
   end
 
-  @doc """
-  Tuple unpacking
-  """
+  # Tuple unpacking
   defp unpack({:ok, msg}), do: msg
   defp unpack({:error, msg}), do: throw {:error, msg}
   defp unpack(:error), do: throw {:error, msg = "Unable to decode json"}

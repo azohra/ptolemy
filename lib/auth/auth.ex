@@ -3,7 +3,7 @@ defmodule Ptolemy.Auth do
   `Ptolemy.Auth` provides authentication implementations to a remote vault server. As of the current version of this
   documentation the only supported auth methods that ptolemy supports is GCP and Approle auth methods.
   """
-  use Tesla
+
   alias Ptolemy.Google.Auth, as: Gauth
 
   @sealed_msg "The vault server is sealed, something terrible has happened!"
@@ -31,7 +31,7 @@ defmodule Ptolemy.Auth do
     case {auth_mode, iap} do
       {"GCP", _ } ->  
         role = opt |> Keyword.get(:role, "default")
-        google_svc = credential |> Map.fetch!(:creds) |> Gauth.parse_svc()
+        google_svc = credential |> Map.fetch!(:svc_acc) |> Gauth.parse_svc()
         iap_tok = 
           if iap do
             client_id = credential |> Map.fetch!(:target_audience)
@@ -48,7 +48,7 @@ defmodule Ptolemy.Auth do
         creds = Keyword.get(opt, :iap_creds, [])
         iap_tok = 
           if iap do
-            google_svc = credential |> Map.fetch!(:creds) |> Gauth.parse_svc()
+            google_svc = credential |> Map.fetch!(:svc_acc) |> Gauth.parse_svc()
             client_id = credential |> Map.fetch!(:target_audience)
             [Gauth.gen_iap_token(google_svc, client_id, exp)]
           else
@@ -97,7 +97,7 @@ defmodule Ptolemy.Auth do
   Check the status of the remote vault. 
   """
   def check_health(client) do
-    with {:ok, resp} <- get(client, "/sys/health"),
+    with {:ok, resp} <- Tesla.get(client, "/sys/health"),
       {:ok, sealed} <- Map.fetch(resp.body, "sealed") 
     do
       case sealed do 
@@ -107,9 +107,8 @@ defmodule Ptolemy.Auth do
     end
   end
 
-  @doc """
-  Authenticates to a remote vault server.
-  """
+
+  # Authenticates to a remote vault server.
   defp auth!(payload, url, auth_endp, iap_tok, opt \\ []) do
     client =
       Tesla.client([
@@ -118,7 +117,7 @@ defmodule Ptolemy.Auth do
         {Tesla.Middleware.JSON, []}
       ])
 
-    with {:ok, resp} <- post(client, auth_endp, payload),
+    with {:ok, resp} <- Tesla.post(client, auth_endp, payload),
         :ok <- check_health(client)
     do
       case {resp.status, resp.body} do
