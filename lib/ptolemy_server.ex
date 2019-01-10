@@ -1,6 +1,6 @@
 defmodule Ptolemy.Server do
   @moduledoc """
-  Ptolemy server is responsible in keeping a remote vault server's configuration data and authentication data. 
+  `Ptolemy.Server` is responsible in keeping a remote vault server's configuration data and authentication data. 
 
   See `Ptolemy` module for the necessary configuration details.
   """
