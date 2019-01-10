@@ -1,17 +1,13 @@
 defmodule Ptolemy.Engines.KV do
   @moduledoc """
-  `Ptomely.KV` provides interaction with a Vault server's Key Value V2 secret egnine.
+  `Ptolemy.Engines.KV` provides interaction with a Vault server's Key Value V2 secret egnine.
   """
 
   use Tesla
   require Logger
 
   @doc """
-  Reads a secret from a remote vault server using Vault's KV engine but throws errors should it encounter one.
-  Params: 
-    * Client - Tesla client
-    * Path - The path to the secret including the name of the vault secret. 
-    * key - Key is the key you wish to find within the vault secret. 
+  Reads a secret from a remote vault server using Vault's KV engine.
   """
   def read_secret!(client, path, vers \\ []) do
     with {:ok, resp} <- get(client, "#{path}", query: vers) do
@@ -26,9 +22,7 @@ defmodule Ptolemy.Engines.KV do
   end
 
   @doc """
-  Creates a new vault secret using vault's KV engine, at location keyd path and with secret data named payload. 
-  Payload is a map representing N keys with their corresponding values. All data within the 
-  payload should be related to the secret.
+  Creates a new vault secret using vault's KV engine.
   """
   def create_secret!(client, path, data, cas \\ nil) do
     payload = if is_nil(cas), do: %{data: data}, else: %{options: %{cas: cas}, data: data}
@@ -45,7 +39,7 @@ defmodule Ptolemy.Engines.KV do
   end
 
   @doc """
-  Deletes latest version belonging to a specific secret
+  Deletes latest version belonging to a specific secret.
   """
   def delete_latest!(client, path) do
     with {:ok, resp} <- delete(client, "#{path}") do
@@ -78,7 +72,7 @@ defmodule Ptolemy.Engines.KV do
 
 
   @doc """
-  Destroys a specific set of version(s) belonging to a specific secret
+  Destroys a specific set of version(s) belonging to a specific secret.
   """
   def destroy!(client, path, vers) do
     payload = %{version: vers}
