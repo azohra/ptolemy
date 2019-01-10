@@ -1,7 +1,8 @@
 defmodule Ptolemy.Auth do
   @moduledoc """
-  `Ptolemy.Auth` provides authentication implementations to a remote vault server. As of the current version of this
-  documentation the only supported auth methods that ptolemy supports is GCP and Approle auth methods.
+  `Ptolemy.Auth` provides authentication implementations to a remote vault server.
+  
+  As of the current version of this documentation the only supported auth methods that ptolemy supports is GCP and Approle auth methods.
   """
 
   alias Ptolemy.Google.Auth, as: Gauth
@@ -12,8 +13,9 @@ defmodule Ptolemy.Auth do
   @default_exp 900 #Default expiration for tokens
 
   @doc """
-  Authenticates a credential to a remote vault server. A list containing needed authorization tokens. The list
-  returned is compatible with tesla's middleware adapters.
+  Authenticates a credential to a remote vault server. 
+  
+  A list containing needed authorization tokens. The list returned is compatible with tesla's middleware adapters.
   
   Currently available options are:
     - `iap_on`
@@ -63,15 +65,11 @@ defmodule Ptolemy.Auth do
     end
   end
 
-  @doc """
-  Authenticates using the Approle authentication method.
-  """
-  def approle_auth!(creds, url, iap_tok, opt \\ []), do: auth!(creds, url, "/auth/approle/login", iap_tok)
+  # Authenticates using the Approle authentication method.
+  defp approle_auth!(creds, url, iap_tok, opt \\ []), do: auth!(creds, url, "/auth/approle/login", iap_tok)
 
-  @doc """
-  Authenticates using the gcp authentication method.
-  """
-  def google_auth!(creds, url, exp, role, iap_tok, opt \\ []) do 
+  # Authenticates using the gcp authentication method.
+  defp google_auth!(creds, url, exp, role, iap_tok, opt \\ []) do 
     str = opt |> Keyword.get(:role, "default") 
 
     vault_claim = %{
@@ -93,10 +91,8 @@ defmodule Ptolemy.Auth do
     auth!(payload, url, "/auth/gcp/login", iap_tok)
   end
 
-  @doc """
-  Check the status of the remote vault. 
-  """
-  def check_health(client) do
+  # Check the status of the remote vault.
+  defp check_health(client) do
     with {:ok, resp} <- Tesla.get(client, "/sys/health"),
       {:ok, sealed} <- Map.fetch(resp.body, "sealed") 
     do

@@ -1,6 +1,6 @@
 defmodule Ptolemy.Google.Auth.JWT do
   @moduledoc """
-  Client to create jwt for authenticating to google's apis
+  `Ptolemy.Google.Auth.JWT` provides JWT functionality to `Ptolemy.Google.Auth`
   """
   import Joken
   require Logger
@@ -34,9 +34,7 @@ defmodule Ptolemy.Google.Auth.JWT do
       |> get_compact()
   end
 
-  @doc """
-  Gets a specific key from a Google JSON Service account credential
-  """
+  # Gets a specific key from a Google JSON Service account credential
   defp get_key(svc, key) do
     svc
     |> Map.fetch(key)

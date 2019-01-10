@@ -1,6 +1,6 @@
 defmodule Ptolemy.Google.Auth do
   @moduledoc """
-  Defines google api authentication
+  `Ptolemy.Google.Auth` provides authentication functionality for the GCP auth method.
   """
 
   alias Ptolemy.Google.Auth.JWT, as: JWT
@@ -12,6 +12,7 @@ defmodule Ptolemy.Google.Auth do
 
   @doc """
   Generates a google API access token used to authenticate your request to google's api.
+
   Returns a tuple following this format {"Authorization", "Bearer <TOKEN>"}, this can be inserted on tesla's
   middleware headers. The tokens are only valid for 59 minutes - as per .
   """
@@ -23,6 +24,7 @@ defmodule Ptolemy.Google.Auth do
 
   @doc """
   Generates an IAP access token used to authenticate through IAP secured resource.
+
   Returns a tuple following this format {"Authorization", "Bearer <TOKEN>"}, this can be inserted on tesla's
   middleware headers.
   """
@@ -32,9 +34,7 @@ defmodule Ptolemy.Google.Auth do
     gen_tok(creds, "id_token", base, exp)
   end
 
-  @doc """
-  Helper func to generate a signed jwt used to submit to google's api.
-  """
+  # Helper func to generate a signed jwt used to submit to google's api.
   defp gen_tok(creds, key, base_claim, exp) do
     token =
       creds
@@ -46,7 +46,7 @@ defmodule Ptolemy.Google.Auth do
   end
 
   @doc """
-  Creates a tesla client to auth in the google apis
+  Creates a tesla client with base url set to auth in the google apis
   """
   def client do
     Tesla.client([
@@ -59,7 +59,7 @@ defmodule Ptolemy.Google.Auth do
   end
 
   @doc """
-  Sends a claim to google's api which upon a succesful 
+  Sends a claim to google's api
   """
   def gen_signed_jwt!(svc, claim, exp) do
     sub = svc |> Map.fetch!("client_email")
@@ -95,7 +95,7 @@ defmodule Ptolemy.Google.Auth do
   end
 
   @doc """
-  Gets a google svc account specified from the config
+  Parses a google service account token.
   """
   def parse_svc(creds) do
     svc =
