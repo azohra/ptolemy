@@ -1,6 +1,8 @@
 defmodule Ptolemy.Server do
   @moduledoc """
-  Ptolemy server is responsible in keeping a remote vault server's configuration data and  authentication data. 
+  Ptolemy server is responsible in keeping a remote vault server's configuration data and authentication data. 
+
+  See `Ptolemy` module for the necessary configuration details.
   """
 
   use GenServer
@@ -27,8 +29,9 @@ defmodule Ptolemy.Server do
   end
   
   @doc """
-  Fetches access tokens needed to authenticate request to vault and IAP (if enabled). Returns a list of tuple(s)
-  containing the tokens.
+  Fetches access tokens needed to authenticate request to vault and IAP (if enabled). 
+
+  Returns a list of tuple(s) containing the access tokens.
   """
   def fetch_credentials(pid) do
     with {state, tokens} <- GenServer.call(pid, :fetch_creds)
@@ -43,7 +46,7 @@ defmodule Ptolemy.Server do
   end
 
   @doc """
-  Sets data within a ptolemy state.
+  Add extra data to the state.
   """
   def set_data(pid, key, payload) do
     GenServer.call(pid, {:set, key, payload})
@@ -63,18 +66,15 @@ defmodule Ptolemy.Server do
     GenServer.call(pid, :dump)
   end
 
-  @doc """
-  Validates the configuration that is fed to the start server. Ptolemy requires a list of keys to
-  be presents in the configuration before it can attempt to make a connection with a remote vault
-  server.
-  """
+
+  # Validates the configuration that is fed to the start server. Ptolemy requires a list of keys to
+  # be presents in the configuration before it can attempt to make a connection with a remote vault
+  # server.
   defp validate(config) do
     validate(@req, config, {:ok,[]})
   end
 
-  @doc """
-  Validate helper functions.
-  """
+  # Validate helper functions.
   defp validate([], _conf, status) do
     case status do 
       {:ok, []} -> {:ok, []}
@@ -113,8 +113,9 @@ defmodule Ptolemy.Server do
   end
 
   @doc """
-  Handles initialization of the authentication process. This will return the necessary HTTP header tokens to the
-  caller additionally these tokens will be automatically purged after `exp` seconds 
+  Handles initialization of the authentication process. 
+  
+  This will return the necessary HTTP header tokens to the caller additionally these tokens will be automatically purged after `exp` seconds 
   """
   @impl true
   def handle_call(:auth, _from, state) do
@@ -136,7 +137,7 @@ defmodule Ptolemy.Server do
   end
 
   @doc """
-  Fetches all necessary tokens needed to send request to a remote vautl server.
+  Fetches all necessary tokens needed to send request to a remote vault server.
   """
   @impl true
   def handle_call(:fetch_creds, _from, state) do
@@ -180,7 +181,9 @@ defmodule Ptolemy.Server do
   end
 
   @doc """
-  Formats the status of the current ptolemy state, this is done to prevent 
+  Formats the status of the current ptolemy state.
+
+  Prevents accidental credential dumping on logs.
   """
   def format_status(:terminate, pdict_and_state) do
     Logger.error "Ptolemy server abrubtly terminated"

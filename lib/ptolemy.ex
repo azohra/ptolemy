@@ -3,37 +3,37 @@ defmodule Ptolemy do
   `Ptolemy` provides client side functions calls to fetch, sets and update secrets within a remote vault server.
 
   ## Configuration
-    In order to properly use ptolemy, you must properly set a ptolemy configuration block.
+    In order to properly use ptolemy, you must properly set a ptolemy configuration block. The configuration block must start with a key of type 
+    atom. It is recommended that the key be named after the remote vault server it is describing.
 
     The available configuration option are as follows:
-    - `:vault_url` ::string (Required) - The url of the remote vault server.
+    - `:vault_url` ::string **(Required)** - The url of the remote vault server.
 
-    - `:auth_mode` ::string (Required) - The authentication method that ptolemy will try to do. As of `0.1.0`, `"GCP"` and `"approle"` are the only supported authentication methods.
+    - `:auth_mode` ::string **(Required)** - The authentication method that ptolemy will try to do. As of `0.1.0`, `"GCP"` and `"approle"` are the only supported authentication methods.
     
     - `:kv_engine` ::map - The kv engine block configuration, all your kv configuration should be store in here.
-      - `:engine_path` ::string 
-        - The engine's path, always need to start with the name and end with a `/`.
-      - `:secrets` ::map 
-        - The path of each secrets you wish to use. Note each 
+      - 
+        - `:engine_path` ::string - The engine's path, always need to start with the name and end with a `/`.
+        - `:secrets` ::map - The path of each secrets you wish to use. Note each 
     
-    - `:credentials` ::map (Required) - The sets of credentials that will be used to authenticate to vault
+    - `:credentials` ::map **(Required)** - The sets of credentials that will be used to authenticate to vault
       - If you are using the Approle auth method:
-        - `:role_id` ::string 
-          - The role ID to use to authenticate.
-        - `:secred_id` ::string 
-          - The secret ID to use to authenticate.
+        - `:role_id` ::string - The role ID to use to authenticate.
+        - `:secred_id` ::string - The secret ID to use to authenticate.
+      
       - If you are using the GCP auth method:
-        - `:svc_acc` ::Based64 encoded string 
-          - The Google service account used to authenticate through IAP and/or vault.
+        - `:svc_acc` ::Based64 encoded string - The Google service account used to authenticate through IAP and/or vault.
+      
+       - In either case where you are using IAP you must provide `:target_audience` ::string - This is the client_id of the OAuth client
+      protecting the resource. Can be found in Security -> Identity-Aware-Proxy -> Select the IAP resource -> Edit OAuth client.
     
     - `:opts` ::List - Optional list.
-      - `:iap_on` ::boolean
-        - Sets whether the remote vautl server has IAP protection or not. If you are using GCP auth method you must provide
+      - `:iap_on` ::boolean - Sets whether the remote vautl server has IAP protection or not. If you are using GCP auth method you must provide
         a service account credential with both `Service Account Token Creator` and `Secured IAP User`. If you are using the Approle auth method
         you must provide `:svc_acc` and a `:target_audience` (client_id of the IAP protected resource) within the `:credential` block.
-      - `:exp` ::integer 
-        - The expiry of each access token (IAP - if enabled - and the vault token). The value has a default of 900 seconds(15 min), keep in mind
-        the maximum time allowed for any google tokens is 3600 (1 hour), for vault that is entirely depended on what the administrator sets (default is 15min).
+      
+      - `:exp` ::integer - The expiry of each access token (IAP - if enabled - and the vault token). The value has a default of 900 seconds(15 min), keep in mind
+      the maximum time allowed for any google tokens is 3600 (1 hour), for vault that is entirely depended on what the administrator sets (default is 15min).
 
   ## Configuration Examples: 
     - For an approle configuration
@@ -76,11 +76,11 @@ defmodule Ptolemy do
         },
         credentials: %{
           svc_acc: System.get_env("GOOGLE_SVC_ACC"),
-          target_audience: System.get_env("TARGET_AUD")
+          target_audience: System.get_env("TARGET_AUD") #Not required if :iap_on is false
         },
         opts: [
           iap_on: false,
-          exp: 6000
+          exp: 3600
         ]
       }
     ```
@@ -107,7 +107,7 @@ defmodule Ptolemy do
   @doc """
   Reads a key from a secret in a remote vault server.
   """
-  def kv_read(pid, secret_path, key, version \\ 0) when is_bitstring(secret_path) do
+  def kv_read(pid, secret_path, key, version \\ 0) do
     with map <- kv_fetch(pid, secret_path, true, version),
       {:ok, values} <- Map.fetch(map, key)
     do
@@ -118,8 +118,17 @@ defmodule Ptolemy do
   end
 
   @doc """
-  Fetches a secret from a remote vault server. This will fetch the specified secret from 
-  the Ptolemy configuration.
+  Fetches all of a secret's keys and value via the `:kv_engine` configuration.
+  
+  See `kv_fetch/2` for the description of the silent and version options.
+
+  ## Example:
+    ```elixir
+      iex(2)> Ptolemy.kv_cfetch(:production, :kv_engine1, :ptolemy)
+      %{ 
+          "Foo" => "NsSgY+HlbriOyWucdHJk+7jn0k3wZ9lf/8JOtXpr9cc="
+        } 
+    ```
   """
   def kv_cfetch(pid, engine_name, secret, silent \\ false, version \\ 0) do
     path = get_kv_path!(pid, engine_name, secret, "data")
@@ -127,8 +136,10 @@ defmodule Ptolemy do
   end
 
   @doc """
-  Fetches all values of a secret from a remote vault server. Enabling the silent option 
-  will mute the response to only contain the secret's key values.
+  Fetches all of a  given secret's key and values from a KV engine
+
+  This function returns the full reponse of the remote vault server, enabling the silent option will only return a map with the key and value
+  of the secret. The version option will allow you to fetch specific version of the target secret.
   """
   def kv_fetch(pid, secret, silent \\ false, version \\ 0) do
     client = create_client(pid)
@@ -175,11 +186,12 @@ defmodule Ptolemy do
     KV.delete!(client, secret, vers)
   end
 
-  def destroy(pid, secret, vers \\ []) do
+  def kv_destroy(pid, secret, vers \\ []) do
     client = create_client(pid)
     KV.destroy!(client, secret, vers)
   end
 
+  #Tesla client function
   defp create_client(pid) do
     creds = Server.fetch_credentials(pid)
     {:ok, url} = Server.get_data(pid, :vault_url)
@@ -191,7 +203,7 @@ defmodule Ptolemy do
     ])
   end
 
-
+  #Make
   defp get_kv_path!(pid, engine_name, secret, operation) when is_atom(secret) do
     with {:ok, kv_conf} <- Server.get_data(pid, :kv_engine),
       {:ok, kvname} <- Map.fetch(kv_conf, engine_name),
