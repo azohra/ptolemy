@@ -10,7 +10,7 @@ defmodule Ptolemy.Engines.KV do
   Reads a secret from a remote vault server using Vault's KV engine.
   """
   def read_secret!(client, path, vers \\ []) do
-    with {:ok, resp} <- get(client, "#{path}", query: vers) do
+    with {:ok, resp} <- Tesla.get(client, "#{path}", query: vers) do
       case {resp.status, resp.body} do
         {status, body} when status in 200..299 ->
           body
@@ -27,7 +27,7 @@ defmodule Ptolemy.Engines.KV do
   def create_secret!(client, path, data, cas \\ nil) do
     payload = if is_nil(cas), do: %{data: data}, else: %{options: %{cas: cas}, data: data}
 
-    with {:ok, resp} <- post(client, "#{path}", payload) do
+    with {:ok, resp} <- Tesla.post(client, "#{path}", payload) do
       case {resp.status, resp.body} do
         {status, _} when status in 200..299 ->
           status
@@ -42,7 +42,7 @@ defmodule Ptolemy.Engines.KV do
   Deletes latest version belonging to a specific secret.
   """
   def delete_latest!(client, path) do
-    with {:ok, resp} <- delete(client, "#{path}") do
+    with {:ok, resp} <- Tesla.delete(client, "#{path}") do
       case {resp.status, resp.body} do
         {status, _} when status in 200..299 ->
           status
@@ -59,7 +59,7 @@ defmodule Ptolemy.Engines.KV do
   def delete!(client, path, vers) do
     payload = %{version: vers}
   
-    with {:ok, resp} <- delete(client, "#{path}", payload) do
+    with {:ok, resp} <- Tesla.delete(client, "#{path}", payload) do
       case {resp.status, resp.body} do
         {status, _} when status in 200..299 ->
           status
@@ -77,7 +77,7 @@ defmodule Ptolemy.Engines.KV do
   def destroy!(client, path, vers) do
     payload = %{version: vers}
   
-    with {:ok, resp} <- post(client, "#{path}", payload) do
+    with {:ok, resp} <- Tesla.post(client, "#{path}", payload) do
       case {resp.status, resp.body} do
         {status, _} when status in 200..299 ->
           status
