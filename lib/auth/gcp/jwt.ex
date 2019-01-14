@@ -22,8 +22,7 @@ defmodule Ptolemy.Google.Auth.JWT do
     #Prep the svc acc's private key
     signer = svc |> get_key("private_key")|> Jjwk.from_pem()|> rs256()
 
-    jwt =
-      token()
+    token()
       |> with_header_args(@google_jwt_header)
       |> with_claim_generator("exp", fn -> current_time() + time end ) #need to overide the overide (T.T) +/- cpu offset
       |> with_claims(base_claim)

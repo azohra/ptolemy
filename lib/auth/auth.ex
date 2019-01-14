@@ -8,7 +8,6 @@ defmodule Ptolemy.Auth do
   alias Ptolemy.Google.Auth, as: Gauth
 
   @sealed_msg "The vault server is sealed, something terrible has happened!"
-  @vault_health_err "Seems like the remote vault server is having issues right now contact the admin!"
 
   @default_exp 900 #Default expiration for tokens
 
@@ -43,11 +42,10 @@ defmodule Ptolemy.Auth do
           end
         toks =
           google_svc
-          |> google_auth!(url, exp, role, iap_tok, [role: role ])
+          |> google_auth!(url, exp, iap_tok, [role: role ])
         [toks | iap_tok]
 
       {"approle", _ } -> 
-        creds = Keyword.get(opt, :iap_creds, [])
         iap_tok = 
           if iap do
             google_svc = credential |> Map.fetch!(:svc_acc) |> Gauth.parse_svc()
@@ -66,10 +64,10 @@ defmodule Ptolemy.Auth do
   end
 
   # Authenticates using the Approle authentication method.
-  defp approle_auth!(creds, url, iap_tok, opt \\ []), do: auth!(creds, url, "/auth/approle/login", iap_tok)
+  defp approle_auth!(creds, url, iap_tok), do: auth!(creds, url, "/auth/approle/login", iap_tok)
 
   # Authenticates using the gcp authentication method.
-  defp google_auth!(creds, url, exp, role, iap_tok, opt \\ []) do 
+  defp google_auth!(creds, url, exp, iap_tok, opt) do 
     str = opt |> Keyword.get(:role, "default") 
 
     vault_claim = %{
@@ -105,7 +103,7 @@ defmodule Ptolemy.Auth do
 
 
   # Authenticates to a remote vault server.
-  defp auth!(payload, url, auth_endp, iap_tok, opt \\ []) do
+  defp auth!(payload, url, auth_endp, iap_tok) do
     client =
       Tesla.client([
         {Tesla.Middleware.BaseUrl, "#{url}/v1"},

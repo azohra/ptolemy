@@ -176,6 +176,7 @@ defmodule Ptolemy.Server do
   @doc """
   Dumps the current state of the genserver.
   """
+  @impl true
   def handle_call(:dump, _from, state) do
     {:reply, {:ok, state}, state}
   end
@@ -185,7 +186,8 @@ defmodule Ptolemy.Server do
 
   Prevents accidental credential dumping on logs.
   """
-  def format_status(:terminate, pdict_and_state) do
+  @impl true
+  def format_status(:terminate, _pdict_and_state) do
     Logger.error "Ptolemy server abrubtly terminated"
   end
 end

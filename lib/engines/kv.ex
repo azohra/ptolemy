@@ -15,7 +15,7 @@ defmodule Ptolemy.Engines.KV do
         {status, body} when status in 200..299 ->
           body
 
-        {status, _} ->
+        {status, _ } ->
           throw "Could not fetch secret in remote vault server. Error code: #{status}"
       end
     end
@@ -29,10 +29,10 @@ defmodule Ptolemy.Engines.KV do
 
     with {:ok, resp} <- Tesla.post(client, "#{path}", payload) do
       case {resp.status, resp.body} do
-        {status, _} when status in 200..299 ->
+        {status, _ } when status in 200..299 ->
           status
 
-        {status, e} ->
+        {status, _ } ->
            throw "Could not create secret in remote vault server. Error code: #{status}"
       end
     end
@@ -44,10 +44,10 @@ defmodule Ptolemy.Engines.KV do
   def delete_latest!(client, path) do
     with {:ok, resp} <- Tesla.delete(client, "#{path}") do
       case {resp.status, resp.body} do
-        {status, _} when status in 200..299 ->
+        {status, _ } when status in 200..299 ->
           status
 
-        {status, e} ->
+        {status, _ } ->
            throw "Could not delete version(s) of secret in remote vault server. Error code: #{status}"
       end
     end
@@ -61,10 +61,10 @@ defmodule Ptolemy.Engines.KV do
   
     with {:ok, resp} <- Tesla.delete(client, "#{path}", payload) do
       case {resp.status, resp.body} do
-        {status, _} when status in 200..299 ->
+        {status, _ } when status in 200..299 ->
           status
 
-        {status, e} ->
+        {status, _ } ->
            throw "Could not delete version(s) of secret in remote vault server. Error code: #{status}"
       end
     end
@@ -79,10 +79,10 @@ defmodule Ptolemy.Engines.KV do
   
     with {:ok, resp} <- Tesla.post(client, "#{path}", payload) do
       case {resp.status, resp.body} do
-        {status, _} when status in 200..299 ->
+        {status, _ } when status in 200..299 ->
           status
 
-        {status, e} ->
+        {status, _ } ->
            throw "Could not destroy version(s) of secret in remote vault server. Error code: #{status}"
       end
     end

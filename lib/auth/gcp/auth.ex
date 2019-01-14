@@ -89,7 +89,7 @@ defmodule Ptolemy.Google.Auth do
 
           {status, body} ->
             message = Map.fetch!(body, "error") |>  Map.fetch!("message")
-            throw {:error, "Api denied the JWT: #{message}"}
+            throw {:error, "Api denied the JWT: #{message}, status #{status}"}
           end
       end
   end

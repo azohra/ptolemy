@@ -204,7 +204,7 @@ defmodule Ptolemy do
   @doc """
   Deletes a secific version of a secret
   """
-  def kv_delete(pid, engine_path, secret, vers \\ []) do
+  def kv_delete(pid, secret, vers \\ []) do
     client = create_client(pid)
     KV.delete!(client, secret, vers)
   end
