@@ -64,10 +64,9 @@ config :ptolemy, Ptolemy,
   iex(1)> {:ok, server} = Ptolemy.start(:production, :server1)
   {:ok, <#PID<0.213.0>}}
   iex(2)> server |> Ptolemy.kv_cread(:kv_engine1, :ptolemy, "foo")
-  {:ok, "NsSgY+HlbriOyWucdHJk+7jn0k3wZ9lf/8JOtXpr9cc="} 
-  # not a real secret, or is it???? 乁( ͡° ͜ʖ ͡°)ㄏ
+  {:ok, "test"} # not a real secret, or is it???? 乁( ͡° ͜ʖ ͡°)ㄏ
   iex(3)> server |> Ptolemy.kv_read("secret/data/ptolemy", "foo")
-  {:ok, "NsSgY+HlbriOyWucdHJk+7jn0k3wZ9lf/8JOtXpr9cc="} 
+  {:ok, "test"} 
   ```
 
 ## Development
