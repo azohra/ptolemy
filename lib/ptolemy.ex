@@ -12,7 +12,7 @@ defmodule Ptolemy do
     - `:auth_mode` ::string **(Required)** - The authentication method that ptolemy will try to do. As of `0.1.0`, `"GCP"` and `"approle"` are the only supported authentication methods.
     
     - `:kv_engine` ::map - The kv engine block configuration, all your kv configuration should be store in here.
-      - 
+      - A key with an atom set to a KV engine name with its value being a map containing:
         - `:engine_path` ::string - The engine's path, always need to start with the name and end with a `/`.
         - `:secrets` ::map - The path of each secrets you wish to use. Note each 
     
@@ -96,8 +96,15 @@ defmodule Ptolemy do
   end
 
   @doc """
-  Reads a specfic key from a vault server. `kv_cread` must have a valid `kv_engine` value in your
-  `config.exs`.
+  Read a specific key from given secret via the `:kv_engine` configuration.
+
+  Specifying a version will read that specific version.
+
+  ## Example
+  ```elixir
+  iex(2)> Ptolemy.kv_cread(:production, :kv_engine1, :ptolemy, "foo")
+  {:ok, test"} 
+  ```
   """
   def kv_cread(pid, engine_name, secret, key, version \\ 0) do
     path = get_kv_path!(pid, engine_name, secret, "data")
@@ -105,7 +112,13 @@ defmodule Ptolemy do
   end
 
   @doc """
-  Reads a key from a secret in a remote vault server.
+  Read a specific key from given secret via a KV engine.
+
+  ## Example
+  ```elixir
+  iex(2)> Ptolemy.kv_cread(:production, "secret/data/ptolemy", "foo")
+  {:ok, test"} 
+  ```
   """
   def kv_read(pid, secret_path, key, version \\ 0) do
     with map <- kv_fetch(pid, secret_path, true, version),
@@ -122,13 +135,13 @@ defmodule Ptolemy do
   
   See `kv_fetch/2` for the description of the silent and version options.
 
-  ## Example:
-    ```elixir
-      iex(2)> Ptolemy.kv_cfetch(:production, :kv_engine1, :ptolemy)
-      %{ 
-          "Foo" => "NsSgY+HlbriOyWucdHJk+7jn0k3wZ9lf/8JOtXpr9cc="
-        } 
-    ```
+  ## Example
+  ```elixir
+  iex(2)> Ptolemy.kv_cfetch(:production, :kv_engine1, :ptolemy)
+  %{ 
+      "Foo" => test"
+    } 
+  ```
   """
   def kv_cfetch(pid, engine_name, secret, silent \\ false, version \\ 0) do
     path = get_kv_path!(pid, engine_name, secret, "data")
@@ -140,8 +153,16 @@ defmodule Ptolemy do
 
   This function returns the full reponse of the remote vault server, enabling the silent option will only return a map with the key and value
   of the secret. The version option will allow you to fetch specific version of the target secret.
+
+  ## Example
+  ```elixir
+  iex(2)> Ptolemy.kv_fetch(:production, "secret/data/ptolemy")
+  %{ 
+      "Foo" => test"
+    } 
+  ```
   """
-  def kv_fetch(pid, secret, silent \\ false, version \\ 0) do
+  def kv_fetch(pid, secret, silent \\ false, version \\ 0) when is_bitstring(secret) do
     client = create_client(pid)
     opts = [version: version]
 
@@ -158,35 +179,40 @@ defmodule Ptolemy do
   end
 
   @doc """
+  Updates an already existing secret via the `:kv_engine` configuration.
   """
   def kv_cupdate(pid, engine_name, secret, payload, cas \\ nil) do
-    path = make_kv_path!(pid, engine_name, secret, "data")
+    path = get_kv_path!(pid, engine_name, secret, "data")
     kv_create(pid, path, payload, cas)
   end
 
   @doc """
-  Updates a secrets in a remote vault server
+  Updates an already existing secre
   """
-  def kv_update(pid, secret, payload, cas \\ nil) do
+  def kv_update(pid, secret, payload, cas \\ nil) when is_bitstring(secret) do
     kv_create(pid, secret, payload, cas)
   end
 
-  def kv_ccreate(pid, engine_name, secret, payload, cas \\ nil) do
-    path = make_kv_path!(pid, engine_name, secret, "data")
-    kv_create(pid, secret, payload, cas)
-  end
-
-  def kv_create(pid, secret, payload, cas \\ nil) do
+  @doc """
+  Creates a new secret via a KV engine
+  """
+  def kv_create(pid, secret, payload, cas \\ nil) when is_bitstring(secret) do
     client = create_client(pid)
     KV.create_secret!(client, secret, payload, cas)
   end
 
+  @doc """
+  Deletes a secific version of a secret
+  """
   def kv_delete(pid, engine_path, secret, vers \\ []) do
     client = create_client(pid)
     KV.delete!(client, secret, vers)
   end
 
-  def kv_destroy(pid, secret, vers \\ []) do
+  @doc """
+  Destroys a specific version of secret
+  """
+  def kv_destroy(pid, secret, vers\\ []) do
     client = create_client(pid)
     KV.destroy!(client, secret, vers)
   end
@@ -203,15 +229,14 @@ defmodule Ptolemy do
     ])
   end
 
-  #Make
+  #Helper functions to make paths
   defp get_kv_path!(pid, engine_name, secret, operation) when is_atom(secret) do
     with {:ok, kv_conf} <- Server.get_data(pid, :kv_engine),
       {:ok, kvname} <- Map.fetch(kv_conf, engine_name),
       %{engine_path: path, secrets: secrets} <- kvname
     do
       {:ok, secret_path} = Map.fetch(secrets, secret)
-
-      make_kv_path!(pid, path, secret_path, operation)
+      make_kv_path!(path, secret_path, operation)
     else
       {:error, "Not found!"} -> throw "#{pid} does not have a kv_engine config"
       :error -> throw "Could not find engine_name in specified config"
@@ -223,14 +248,14 @@ defmodule Ptolemy do
       {:ok, kvname} <- Map.fetch(kv_conf, engine_name),
       %{engine_path: path, secrets: _ } <- kvname
     do
-      make_kv_path!(pid, path, secret, operation)
+      make_kv_path!(path, secret, operation)
     else
       {:error, "Not found!"} -> throw "#{pid} does not have a kv_engine config"
       :error -> throw "Could not find engine_name in specified config"
     end
   end
 
-  defp make_kv_path!(pid, engine_path, secret_path, operation) do
+  defp make_kv_path!(engine_path, secret_path, operation) do
     "/#{engine_path}#{operation}#{secret_path}"
   end
 
