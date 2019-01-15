@@ -103,7 +103,7 @@ defmodule Ptolemy do
   ## Example
   ```elixir
   iex(2)> Ptolemy.kv_cread(:production, :kv_engine1, :ptolemy, "foo")
-  {:ok, test"} 
+  {:ok, "test"} 
   ```
   """
   def kv_cread(pid, engine_name, secret, key, version \\ 0) do
@@ -117,7 +117,7 @@ defmodule Ptolemy do
   ## Example
   ```elixir
   iex(2)> Ptolemy.kv_cread(:production, "secret/data/ptolemy", "foo")
-  {:ok, test"} 
+  {:ok, "test"} 
   ```
   """
   def kv_read(pid, secret_path, key, version \\ 0) do
@@ -133,17 +133,18 @@ defmodule Ptolemy do
   @doc """
   Fetches all of a secret's keys and value via the `:kv_engine` configuration.
   
-  See `kv_fetch/2` for the description of the silent and version options.
+  See `kv_fetch!/2` for the description of the silent and version options.
 
   ## Example
   ```elixir
-  iex(2)> Ptolemy.kv_cfetch(:production, :kv_engine1, :ptolemy)
+  iex(2)> Ptolemy.kv_cfetch!(:production, :kv_engine1, :ptolemy)
   %{ 
       "Foo" => test"
+      ...
     } 
   ```
   """
-  def kv_cfetch(pid, engine_name, secret, silent \\ false, version \\ 0) do
+  def kv_cfetch!(pid, engine_name, secret, silent \\ false, version \\ 0) do
     path = get_kv_path!(pid, engine_name, secret, "data")
     kv_fetch(pid, path, silent, version)
   end
@@ -156,13 +157,14 @@ defmodule Ptolemy do
 
   ## Example
   ```elixir
-  iex(2)> Ptolemy.kv_fetch(:production, "secret/data/ptolemy")
+  iex(2)> Ptolemy.kv_fetch!(:production, "secret/data/ptolemy")
   %{ 
       "Foo" => test"
+      ...
     } 
   ```
   """
-  def kv_fetch(pid, secret, silent \\ false, version \\ 0) when is_bitstring(secret) do
+  def kv_fetch!(pid, secret, silent \\ false, version \\ 0) when is_bitstring(secret) do
     client = create_client(pid)
     opts = [version: version]
 
@@ -180,39 +182,92 @@ defmodule Ptolemy do
 
   @doc """
   Updates an already existing secret via the `:kv_engine` configuration.
+
+  ## Example
+  ```elixir
+  iex(2)> Ptolemy.kv_cupdate!(:production, :engine1, :ptolemy, %{test: "asda"}, 1)
+  200
+  ```
   """
-  def kv_cupdate(pid, engine_name, secret, payload, cas \\ nil) do
+  def kv_cupdate!(pid, engine_name, secret, payload, cas \\ nil) do
     path = get_kv_path!(pid, engine_name, secret, "data")
     kv_create(pid, path, payload, cas)
   end
 
   @doc """
-  Updates an already existing secre
+  Updates an already existing secret.
+
+  ## Example
+  ```elixir
+  iex(2)> Ptolemy.kv_update!(:production, "secret/data/ptolemy", %{test: "asda"}, 1)
+  200
+  ```
   """
-  def kv_update(pid, secret, payload, cas \\ nil) when is_bitstring(secret) do
+  def kv_update!(pid, secret, payload, cas \\ nil) when is_bitstring(secret) do
     kv_create(pid, secret, payload, cas)
   end
 
   @doc """
   Creates a new secret via a KV engine
+
+  ## Example
+  ```elixir
+  iex(2)> Ptolemy.kv_create!(:production, "secret/data/new", %{test: "test"}, 1)
+  200
   """
-  def kv_create(pid, secret, payload, cas \\ nil) when is_bitstring(secret) do
+  def kv_create!(pid, secret, payload, cas \\ nil) when is_bitstring(secret) do
     client = create_client(pid)
     KV.create_secret!(client, secret, payload, cas)
   end
 
   @doc """
-  Deletes a secific version of a secret
+  Deletes a secific version of a secret via the `:kv_engine` configuration.
+
+  ```elixir
+  iex(2)> Ptolemy.kv_cdelete!(:production, :engine1, :ptolemy, [1,2])
+  204
+  ```
   """
-  def kv_delete(pid, secret, vers \\ []) do
+  def kv_cdelete!(pid, engine_name, secret, vers) do
+    path = get_kv_path!(pid, engine_name, secret, "delete")
+    kv_delete(pid, path, vers)
+  end
+
+  @doc """
+  Deletes a secific version of a secret.
+
+  ```elixir
+  iex(2)> Ptolemy.kv_delete!(:production, "secret/delete/ptolemy", [1,2])
+  204
+  ```
+  """
+  def kv_delete!(pid, secret, vers) do
     client = create_client(pid)
     KV.delete!(client, secret, vers)
   end
 
   @doc """
-  Destroys a specific version of secret
+  Destroys a secific version of a secret via the `:kv_engine` configuration.
+
+  ```elixir
+  iex(2)> Ptolemy.kv_cdestroy!(:production, :engine1, :ptolemy, [1,2])
+  204
+  ```
   """
-  def kv_destroy(pid, secret, vers\\ []) do
+  def kv_cdestroy!(pid, engine_name, secret, vers) do
+    path = get_kv_path!(pid, engine_name, secret, "destroy")
+    kv_delete(pid, path, vers)
+  end
+
+  @doc """
+  Destroys a specific version of secret.
+
+  ```elixir
+  iex(2)> Ptolemy.kv_destroy!(:production, "secret/destroy/ptolemy", [1,2])
+  204
+  ```
+  """
+  def kv_destroy!(pid, secret, vers) do
     client = create_client(pid)
     KV.destroy!(client, secret, vers)
   end
