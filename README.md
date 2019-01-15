@@ -56,7 +56,7 @@ config :ptolemy, Ptolemy,
   It is recommended that you start a ptolemy process via a supervised process such as:
   ```elixir
   def application do
-    worker(Ptolemy, [:server1]),
+    worker(Ptolemy.Server, [:pid, :server1]),
   end
   ```
  Once you configure and start the application, you have access to simple getters and setters, like: 
