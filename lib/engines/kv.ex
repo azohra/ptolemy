@@ -3,7 +3,6 @@ defmodule Ptolemy.Engines.KV do
   `Ptolemy.Engines.KV` provides interaction with a Vault server's Key Value V2 secret egnine.
   """
 
-  use Tesla
   require Logger
 
   @doc """
@@ -39,27 +38,12 @@ defmodule Ptolemy.Engines.KV do
   end
 
   @doc """
-  Deletes latest version belonging to a specific secret.
-  """
-  def delete_latest!(client, path) do
-    with {:ok, resp} <- Tesla.delete(client, "#{path}") do
-      case {resp.status, resp.body} do
-        {status, _ } when status in 200..299 ->
-          status
-
-        {status, _ } ->
-           throw "Could not delete version(s) of secret in remote vault server. Error code: #{status}"
-      end
-    end
-  end
-
-  @doc """
   Deletes a specific set of version(s) belonging to a specific secret
   """
   def delete!(client, path, vers) do
-    payload = %{version: vers}
-  
-    with {:ok, resp} <- Tesla.delete(client, "#{path}", payload) do
+    payload = %{versions: vers}
+
+    with {:ok, resp} <- Tesla.post(client, "#{path}", payload) do
       case {resp.status, resp.body} do
         {status, _ } when status in 200..299 ->
           status
@@ -75,7 +59,7 @@ defmodule Ptolemy.Engines.KV do
   Destroys a specific set of version(s) belonging to a specific secret.
   """
   def destroy!(client, path, vers) do
-    payload = %{version: vers}
+    payload = %{versions: vers}
   
     with {:ok, resp} <- Tesla.post(client, "#{path}", payload) do
       case {resp.status, resp.body} do
