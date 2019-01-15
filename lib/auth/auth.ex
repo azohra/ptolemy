@@ -124,7 +124,7 @@ defmodule Ptolemy.Auth do
 
         {status, body} ->
           message = Map.fetch!(body, "errors")
-          throw {:error, "Authentication failed, Status:#{status} with error: #{message}"}
+          throw {:error, "Authentication failed, Status: #{status} with error: #{message}"}
       end
     else
       :sealed -> raise @sealed_msg
