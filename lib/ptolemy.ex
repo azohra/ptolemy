@@ -92,7 +92,7 @@ defmodule Ptolemy do
   Entrypoint of ptolemy, this will start the process and store all necessary state for a connection to a remote vault server.
   """
   def start(name, config) do
-    Server.start(name, config)
+    Server.start_link(name, config)
   end
 
   @doc """
