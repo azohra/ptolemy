@@ -16,7 +16,7 @@ defmodule Ptolemy.Server do
   @doc """
   Starts a ptolemy server that will hold state.
   """
-  def start(pid, server) do
+  def start_link(pid, server) do
     config = 
       Application.get_env(:ptolemy, Ptolemy)
       |> Keyword.get(server)
