@@ -98,8 +98,7 @@ defmodule Ptolemy.Google.Auth do
   Parses a google service account token.
   """
   def parse_svc(creds) do
-    svc =
-      creds
+    creds
       |> Base.url_decode64()
       |> unpack()
       |> serialize()
@@ -136,6 +135,6 @@ defmodule Ptolemy.Google.Auth do
   # Tuple unpacking
   defp unpack({:ok, msg}), do: msg
   defp unpack({:error, msg}), do: throw {:error, msg}
-  defp unpack(:error), do: throw {:error, msg = "Unable to decode json"}
+  defp unpack(:error), do: throw {:error, "Unable to decode json"}
 
 end

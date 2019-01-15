@@ -165,7 +165,7 @@ defmodule Ptolemy.Server do
   """
   @impl true
   def handle_call({:set, key, payload}, _from, state) do
-    with {:ok, return} <- Map.fetch(state, key) do
+    with true <- Map.has_key?(state, key) do
       nstate = Map.replace!(state, key, payload)
       {:reply, :ok, nstate}
     else

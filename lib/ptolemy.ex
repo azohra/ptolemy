@@ -121,7 +121,7 @@ defmodule Ptolemy do
   ```
   """
   def kv_read(pid, secret_path, key, version \\ 0) do
-    with map <- kv_fetch(pid, secret_path, true, version),
+    with map <- kv_fetch!(pid, secret_path, true, version),
       {:ok, values} <- Map.fetch(map, key)
     do
       {:ok, values}
@@ -146,7 +146,7 @@ defmodule Ptolemy do
   """
   def kv_cfetch!(pid, engine_name, secret, silent \\ false, version \\ 0) do
     path = get_kv_path!(pid, engine_name, secret, "data")
-    kv_fetch(pid, path, silent, version)
+    kv_fetch!(pid, path, silent, version)
   end
 
   @doc """
@@ -191,7 +191,7 @@ defmodule Ptolemy do
   """
   def kv_cupdate!(pid, engine_name, secret, payload, cas \\ nil) do
     path = get_kv_path!(pid, engine_name, secret, "data")
-    kv_create(pid, path, payload, cas)
+    kv_create!(pid, path, payload, cas)
   end
 
   @doc """
@@ -204,7 +204,7 @@ defmodule Ptolemy do
   ```
   """
   def kv_update!(pid, secret, payload, cas \\ nil) when is_bitstring(secret) do
-    kv_create(pid, secret, payload, cas)
+    kv_create!(pid, secret, payload, cas)
   end
 
   @doc """
@@ -230,7 +230,7 @@ defmodule Ptolemy do
   """
   def kv_cdelete!(pid, engine_name, secret, vers) do
     path = get_kv_path!(pid, engine_name, secret, "delete")
-    kv_delete(pid, path, vers)
+    kv_delete!(pid, path, vers)
   end
 
   @doc """
@@ -256,7 +256,7 @@ defmodule Ptolemy do
   """
   def kv_cdestroy!(pid, engine_name, secret, vers) do
     path = get_kv_path!(pid, engine_name, secret, "destroy")
-    kv_delete(pid, path, vers)
+    kv_destroy!(pid, path, vers)
   end
 
   @doc """
