@@ -16,10 +16,11 @@ defmodule Ptolemy.Server do
   @doc """
   Starts a ptolemy server that will hold state.
   """
-  def start_link(pid, server) do
+  def start_link(pid, server, opts \\ []) do
     config = 
       Application.get_env(:ptolemy, Ptolemy)
       |> Keyword.get(server)
+      |> overide?(opts)
 
     with {:ok, []} <- validate(config) do
       GenServer.start_link(__MODULE__, config, name: pid)
@@ -27,7 +28,7 @@ defmodule Ptolemy.Server do
       {:error, missing} -> raise @validation_err <> "#{missing}"
     end
   end
-  
+
   @doc """
   Fetches access tokens needed to authenticate request to vault and IAP (if enabled). 
 
@@ -94,6 +95,23 @@ defmodule Ptolemy.Server do
       {false, :error, _ } ->  validate(tail, conf, {:error, missing ++ [Atom.to_string(head)]})
     end
   end
+
+  #helper functions to overide conf
+  defp overide?(map, opts) do
+    if opts == [] do 
+      map
+    else
+      overide(map, Keyword.keys(opts), opts)
+    end
+  end
+
+  defp overide(map, [head | tail], opts) do
+    v = Keyword.get(opts, head)
+    new_map = Map.put(map, head, v)
+    overide(new_map, tail, opts)
+  end 
+
+  defp overide(map, [], _opts), do: map
 
   @doc """
   Handles initilization of the ptolemy server.
