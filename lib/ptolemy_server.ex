@@ -15,6 +15,8 @@ defmodule Ptolemy.Server do
 
   @doc """
   Starts a ptolemy server that will hold state.
+
+  When starting you may provide runtime configuration to Ptolemy by specifying a keyword list with the overiding values.
   """
   def start_link(pid, server, opts \\ []) do
     config = 

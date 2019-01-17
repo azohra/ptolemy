@@ -59,6 +59,13 @@ config :ptolemy, Ptolemy,
     worker(Ptolemy.Server, [:pid, :server1]),
   end
   ```
+  Additionally you could provide runtime configuration by specifying an extra keyword list when you start Ptolemy.
+  ```elixir
+  def application do
+    worker(Ptolemy.Server, [:pid, :server1, [credentials: %{role_id: "test", secret_id: "test"}, opts: []]]),
+  end
+  ```
+
  Once you configure and start the application, you have access to simple getters and setters, like: 
   ```elixir
   iex(1)> {:ok, server} = Ptolemy.start(:production, :server1)
