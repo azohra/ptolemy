@@ -42,7 +42,7 @@ defmodule Ptolemy.Server do
       case {state, tokens} do
         {:ok, tokens} -> tokens
         {:error, _ } -> 
-          {:ok, tok} = GenServer.call(pid, :auth)
+          {:ok, tok} = GenServer.call(pid, :auth, 15000)
           tok
       end
     end
