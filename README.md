@@ -107,20 +107,20 @@ User has the choice of calling `Ptolemy.kv_read` everytime when they use a secre
 
 1. Restructure Ptolemy to support genric engines
 2. Add engine support for
-  * Key/Value V2 (Done)
-    The kv secret engine is used to store versioned key value pair secrets. Of course, you may use it as non-versioned if you wish. Our implementation contains a full set of operations to manipulate secrets. This engine is mostly done, thanks to @brsmsn
-  * GCP (WIP)
-    This is a dynamic secret engine that generates short term Google Cloud service account keys and OAuth tokens based on IAM. It provides security advantages including short-term access and service key cleaning. Our support will provide account keys and tokens retrieval and updating functionalities.
-  * Cubbyhole (Planned)
-    The cubbyhole secrets engine is used to store arbitrary secrets within the configured physical storage for Vault namespaced to a token. In cubbyhole, paths are scoped per token.
-  * PKI (Planned)
-    The PKI secrets engine generates dynamic X.509 certificates.
-  * TOTP (Panned)
-    The TOTP secrets engine generates time-based credentials according to the TOTP standard
-  * Databases (Planned)
-    The database secrets engine generates database credentials dynamically based on configured roles.
-  * AWS (Bonus)
-    TBD due to lack of internal demand, but AWS engine implementation will be similar to GCP engine's.
+  - Key/Value V2 (Done)
+    - The kv secret engine is used to store versioned key value pair secrets. Of course, you may use it as non-versioned if you wish. Our implementation contains a full set of operations to manipulate secrets. This engine is mostly done, thanks to @brsmsn
+  - GCP (WIP)
+    - This is a dynamic secret engine that generates short term Google Cloud service account keys and OAuth tokens based on IAM. It provides security advantages including short-term access and service key cleaning. Our support will provide account keys and tokens retrieval and updating functionalities.
+  - Cubbyhole (Planned)
+    - The cubbyhole secrets engine is used to store arbitrary secrets within the configured physical storage for Vault namespaced to a token. In cubbyhole, paths are scoped per token.
+  - PKI (Planned)
+    - The PKI secrets engine generates dynamic X.509 certificates.
+  - TOTP (Panned)
+    - The TOTP secrets engine generates time-based credentials according to the TOTP standard
+  - Databases (Planned)
+    - The database secrets engine generates database credentials dynamically based on configured roles.
+  - AWS (Bonus)
+    - TBD due to lack of internal demand, but AWS engine implementation will be similar to GCP engine's.
 
 3. Feel free to tell us what features do you want with Ptolemy by opening an issue
 
