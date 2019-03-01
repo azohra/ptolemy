@@ -83,7 +83,38 @@ config :ptolemy, Ptolemy,
 
 When we were designing Ptolemy, we envisioned it to be a lean wrapper application that makes communication with Vault easier and more secure in a programmatic way. Thus, it does NOT manage the lifecycle of the secrets, that is the process of putting secrets into application environment and updating the secrets according to their ttl.
 
-User has the choice of calling `Ptolemy.kv_read` everytime when they use a secret, however, we recommend our user to use a cache server (i.e. genserver, Cachex etc.) to store the secrets in cache and load the secrets into application environment variables from cache at the start-up stage. A cache server would not only significantly improve the secret reading performance, but also keep track of which secret is expiring and need to be refetched from Vault. 
+User has the choice of calling `Ptolemy.kv_read` everytime when they use a secret, however, we recommend our user to use a cache server (i.e. genserver, Cachex etc.) to store the secrets in cache and load the secrets into application environment variables from cache at the start-up stage. A cache server would not only significantly improve the secret reading performance, but also keep track of which secret is expiring and need to be refetched from Vault.
+
+Here is an example of initial application variable loading, we are using Cachex here as example, but you may use anything you want for the cache
+```elixir
+  @server Cachex
+
+  @doc """
+  Starts and Initializes the cache to store secrets.
+  """
+  def start_link(name) do
+    process = @server.start_link(name)
+    # Populate cache
+    load_data(name)
+    process
+  end
+
+  @doc """
+  Fetch a secret from the vault agent.
+  """
+  def fetch(name, secret_name) do
+    case @server.fetch(name, secret_name) do
+      {:ok, val} -> {:ok, val}
+      ret -> Logger.warn("[VaultStore] Application environment variable #{secret_name} is missing in vault", ansi_color: :red)
+        ret
+    end
+  end
+
+  defp load_data(name) do
+    # Load data as the name suggests would load the secrets from vault to our @server
+    # ...
+  end
+```
 
 ## Development
   Running a local dev environment of ptolemy requires:
