@@ -54,7 +54,7 @@ Ptolemy/
 ```
 
 ##### stores/cache.ex
-`stores/cache.ex` will be responsible for loading secrets from Vault into Cache. I'm still figuring out whether we should also load the secret into Application environment and takes care of ttl here or in a separate module. I'm leaning towards a another `load` module that manages it.
+`stores/cache.ex` will be responsible for loading secrets from Vault into Cache. We are still figuring out whether we should also load the secret into Application environment and takes care of the ttls here or in a separate module. I'm leaning towards a another `load` module that manages it.
 
 ##### ptolemy.ex
 `ptolemy.ex` will only contain a generic CRUD functions for users to interact, each function should take in the engine name as a parameter in order to pattern match with the correct support engine to call.  The underneath implementation of CRUD operations should lie within `lib/engines` folder. For example, `kv.ex` would still contain the communication functions, and `kv_server.ex` would be responsible for making the `ptolemy.ex` functions happen.
