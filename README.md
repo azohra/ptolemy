@@ -85,7 +85,8 @@ When we were designing Ptolemy, we envisioned it to be a lean wrapper applicatio
 
 User has the choice of calling `Ptolemy.kv_read` everytime when they use a secret, however, we recommend our user to use a cache server (i.e. genserver, Cachex etc.) to store the secrets in cache and load the secrets into application environment variables from cache at the start-up stage. A cache server would not only significantly improve the secret reading performance, but also keep track of which secret is expiring and need to be refetched from Vault.
 
-Here is an example of initial application variable loading, we are using Cachex here as example, but you may use anything you want for the cache
+Here is an example of initial application variable loading, we are using Cachex here as example, but you may use any service you want for the cache. Note, when cache miss occurs, you would need a fallback function to attempt to fetch secret from Vault again.
+
 ```elixir
   @server Cachex
 
@@ -110,11 +111,29 @@ Here is an example of initial application variable loading, we are using Cachex 
     end
   end
 
+  @doc """
+  Load data as the name suggests would load the secrets from vault to our @server
+  """
   defp load_data(name) do
-    # Load data as the name suggests would load the secrets from vault to our @server
-    # ...
+    {:ok, url} = Ptolemy.Server.get_data(:vault, :vault_url)
+    secrets = Ptolemy.kv_cfetch!(:vault, :server1, name, true)
+
+    insert(name, Map.to_list(secrets))
   end
 ```
+
+With the cache application set up, you can use a environment loader and load all the secrets into your application from cache directly
+```elixir
+  def load do
+    Application.put_env(
+      :level_one_name,
+      :level_two_name,
+      CacheInterface.fetch!("TEST_TOKEN")
+    )
+  end
+```
+
+
 
 ## Development
   Running a local dev environment of ptolemy requires:
