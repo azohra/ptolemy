@@ -79,62 +79,6 @@ config :ptolemy, Ptolemy,
   {:ok, "test"} 
   ```
 
-## Recommended Strategy
-
-When we were designing Ptolemy, we envisioned it to be a lean wrapper application that makes communication with Vault easier and more secure in a programmatic way. Thus, it does NOT manage the lifecycle of the secrets, that is the process of putting secrets into application environment and updating the secrets according to their ttl.
-
-User has the choice of calling `Ptolemy.kv_read` everytime when they use a secret, however, we recommend our user to use a cache server (i.e. genserver, Cachex etc.) to store the secrets in cache and load the secrets into application environment variables from cache at the start-up stage. A cache server would not only significantly improve the secret reading performance, but also keep track of which secret is expiring and need to be refetched from Vault.
-
-Here is an example of initial application variable loading, we are using Cachex here as example, but you may use any service you want for the cache. Note, when cache miss occurs, you would need a fallback function to attempt to fetch secret from Vault again.
-
-```elixir
-  @server Cachex
-
-  @doc """
-  Starts and Initializes the cache to store secrets.
-  """
-  def start_link(name) do
-    process = @server.start_link(name)
-    # Populate cache
-    load_data(name)
-    process
-  end
-
-  @doc """
-  Fetch a secret from the vault agent.
-  """
-  def fetch(name, secret_name) do
-    case @server.fetch(name, secret_name) do
-      {:ok, val} -> {:ok, val}
-      ret -> Logger.warn("[VaultStore] Application environment variable #{secret_name} is missing in vault", ansi_color: :red)
-        ret
-    end
-  end
-
-  @doc """
-  Load data as the name suggests would load the secrets from vault to our @server
-  """
-  defp load_data(name) do
-    {:ok, url} = Ptolemy.Server.get_data(:vault, :vault_url)
-    secrets = Ptolemy.kv_cfetch!(:vault, :server1, name, true)
-
-    insert(name, Map.to_list(secrets))
-  end
-```
-
-With the cache application set up, you can use a environment loader and load all the secrets into your application from cache directly
-```elixir
-  def load do
-    Application.put_env(
-      :level_one_name,
-      :level_two_name,
-      CacheInterface.fetch!("TEST_TOKEN")
-    )
-  end
-```
-
-
-
 ## Development
   Running a local dev environment of ptolemy requires:
   - JQ
@@ -177,6 +121,10 @@ With the cache application set up, you can use a environment loader and load all
 
 ### Restructure Proposal
 
+When we were designing Ptolemy, we envisioned it to be not just a wrapper application that simplifies the communication with Vault in a programmatic way. It also provides capability to load the secrets into your application environment and updating the secrets according to their ttl if available.
+
+User has the choice of communicating directly with the CRUD interface of Ptolemy, which fetches secret from vault and allows manipulations on the secrets, these functions provide users with a great degree of flexibility. However, if you are looking for a convenient and performant way of accessing secrets, you are in luck. We offer a robust secret loading functionalities. You can provide secrets that you would like to fetch from the Vault in config files, and Ptolemy would handle the repetitive task of loading secrets into your application environment like magic! It even takes care of refreshing the secret when they expire.
+
 We are trying to restructure Ptolemy in order to make it generic enough to support various secret engines, thus the folder structure would need a overhaul. Here is a proposal on how the repository should look like.
 
 #### Current
@@ -199,6 +147,7 @@ Currently, `ptolemy_server.ex` contains CRUD operations for kv engine specifical
 ```
 Ptolemy/
 ├── config
+│   ├── secrets.exs
 │   └── config.exs
 ├── lib
 │   ├── engines
@@ -209,10 +158,35 @@ Ptolemy/
 │   │   |   ├── gcp_server.ex
 │   │   |   └── gcp.ex
 │   │   └── ...
+│   ├── stores
+│   │   ├── cache.ex
+│   │   ├── genserver
+│   │   |   └── genserver.ex
+│   │   └── ...
 │   ├── ptolemy.ex
 │   ├── ptolemy_server.ex
+│   ├── ptolemy_store.ex
 │   └── ...
 └── ...
+```
+
+`secrets.exs` will be the place for you to configure the secrets you want to have Ptolemy loaded into the application
+```elixir
+config :ptolemy, Secrets,
+  server1: %{
+    kv_engine1: [
+      %{
+        app: :ptolemy,
+        key: :token,
+        vault_key: "token"
+      },
+      %{
+        app: :ptolemy,
+        key: :another_token,
+        vault_key: "another_token"
+      }
+    ]
+  }
 ```
 
 `ptolemy_server.ex` will only contain a generic CRUD functions for users to interact, each function should take in the engine name as a parameter in order to pattern match with the correct support engine to call.  The underneath implementation of CRUD operations should lie within `lib/engines` folder. For example, `kv.ex` would still contain the communication functions, and `kv_server.ex` would be responsible for making the `ptolemy.ex` functions happen.
