@@ -4,18 +4,123 @@
 
 Ptolemy is now at a current stage where our thinking goes beyond the simple accessing and updating of secrets stored in a Vault server. For the idea of Application Managed secrets to fully be an accepted practice in the Elixir community, an effective and elegant solution will need to be built. We hope Ptolemy can fill this void.
 
-## Components
+When we were designing Ptolemy, we envisioned it to be not just a wrapper application that simplifies the communication with Vault in a programmatic way. It also provides capability to load the secrets into your application environment and updating the secrets according to their ttl if available.
 
-### Secret Life-cycle Management
+User has the choice of communicating directly with the CRUD interface of Ptolemy, which fetches secret from vault and allows manipulations on the secrets, these functions provide users with a great degree of flexibility. However, if you are looking for a convenient and performant way of accessing secrets, you are in luck. We offer a robust secret loading functionalities. You can provide secrets that you would like to fetch from the Vault in config files, and Ptolemy would handle the repetitive task of loading secrets into your application environment like magic! It even takes care of refreshing the secret when they expire.
 
-> It is still TBD if this functionality belongs in Ptolemy but it will begin here.
+We are trying to restructure Ptolemy in order to make it generic enough to support various secret engines, thus the folder structure would need a overhaul. Here is a proposal on how the repository should look like.
 
-Traditionally, all secrets in Elixir have been backed in, or set once and forgotten. This strategy works well with the nature of common secrets. With the introduction of tools like Vault, the availability of dynamic secrets and the additional security they provide will require a non-traditional approach to leverage correctly.
+#### Current
+```
+Ptolemy/
+├── config
+│   └── config.exs
+├── lib
+│   ├── engines
+│   │   └── kv.ex
+│   ├── ptolemy.ex
+│   ├── ptolemy_server.ex
+│   └── ...
+└── ...
+```
+Currently, `ptolemy_server.ex` contains CRUD operations for kv engine specifically, and `lib/engine/kv.ex` contains the communication interface for kv engine. The structure is not flexible enough to add additional engine support. With modularized design in mind, we propose the following the structure.
 
-The solution we propose comes from the Erlang methodology of 'let it crash'. We propose that on a change of environment, we should 'make it crash'. When performed intelligently, processes that depend on an expired/changed secret could be made to crash, restart, then reinitialize with the updated secrets.
 
-Application secrets (and even simple configuration because its so easy) would be defined in the application's typical config:
+#### Proposal
+```
+Ptolemy/
+├── config
+│   ├── (secrets.exs)
+│   └── config.exs
+├── lib
+│   ├── engines
+│   │   ├── kv
+│   │   |   ├── kv_server.ex
+│   │   |   └── kv.ex
+│   │   ├── gcp
+│   │   |   ├── gcp_server.ex
+│   │   |   └── gcp.ex
+│   │   └── ...
+│   ├── stores
+│   │   ├── cache.ex
+│   │   ├── genserver
+│   │   |   └── genserver.ex
+│   │   └── ...
+│   ├── ptolemy.ex
+│   ├── ptolemy_server.ex
+│   ├── ptolemy_store.ex
+│   └── ...
+└── ...
+```
 
+##### stores/cache.ex
+`stores/cache.ex` will be responsible for loading secrets from Vault into Cache. I'm still figuring out whether we should also load the secret into Application environment and takes care of ttl here or in a separate module. I'm leaning towards a another `load` module that manages it.
+
+##### ptolemy.ex
+`ptolemy.ex` will only contain a generic CRUD functions for users to interact, each function should take in the engine name as a parameter in order to pattern match with the correct support engine to call.  The underneath implementation of CRUD operations should lie within `lib/engines` folder. For example, `kv.ex` would still contain the communication functions, and `kv_server.ex` would be responsible for making the `ptolemy.ex` functions happen.
+
+```elixir
+defmodule Ptolemy do
+  @doc start Ptolemy process
+  def start(name, config) do
+    Server.start_link(name, config)
+  end
+
+  @doc create secrets
+  def create(pid, engine_name, secret, payload, opts // []) do
+    # ...
+  end
+
+  @doc fetches all secrets from a specified path
+  def fetch(pid, engine_name,  secret, opts // []) do
+    # ...
+  end
+
+  @doc read one specific secret from the path
+  def read(pid, engine_name, secret, secret_name, opts // []) do
+    # ...
+  end
+
+  @doc update a secret
+  def update(pid, engine_name, secret, payload, opts // []) do
+    # ...
+  end
+
+  @doc move a secret into recycle bin
+  def delete(pid, engine_name, secret, opts // []) do
+    # ...
+  end
+
+  @doc destroy a secret completely
+  def destroy(pid, engine_name, secret, opts // []) do
+    # ...
+  end
+end
+```
+
+##### config/secrets.exs
+We are currently considering two formats of letting users specify secrets
+
+1. `config/secrets.exs`
+```elixir
+config :ptolemy, Secrets,
+  server1: %{
+    kv_engine1: [
+      %{
+        app: :ptolemy,
+        key: :token,
+        vault_key: "token"
+      },
+      %{
+        app: :ptolemy,
+        key: :another_token,
+        vault_key: "another_token"
+      }
+    ]
+  }
+```
+
+2. `config/config.exs` the typical config file
 ```elixir
 config :ptolemy,
 	env: [
@@ -24,112 +129,3 @@ config :ptolemy,
 		# ...
 	]
 ```
-
-Secrets can also be associated with processes that should restart when they have been changed:
-
-```elixir
-config :ptolemy,
-	env: [
-		{:secret_one, {Ptolemy.Providers.Vault.KeyVal, "VAULT_SECRET_NAME"}, restart_on_change: :my_db_pid},
-		# ...
-	]
-```
-
-To use the config, use Ptolemy's `start_link/2` implementation:
-
-```elixir
-defmodule MyApp.Supervisor do
-	use Supervisor
-
-	def start_link(init_arg) do
-		Ptolemy.Supervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
-	end
-
-	@impl true
-  	def init(_init_arg) do
-    	children = [
-      		{Stack, [:hello]}
-    	]
-
-    	Ptolemy.Supervisor.init(children, strategy: :one_for_one)
-  	end
-end
-```
-
-The Ptolemy implementation of `Supervisor` would simply add an additional Ptolemy process to the start of the supervision tree. The resulting tree would look like something generated by:
-```elixir
-def init(_init_arg) do
-    	children = [
- 			Ptolemy.Monitor,   		
-      		{MyApp.Process1, []},
-      		# ...
-    	]
-
-    	Supervisor.init(children, strategy: :one_for_one)
-  	end
-```
-
-And would yield a supervision tree similar to:
-
-```
-              +--------------------------+
-              |                          |
-              |  Application Supervisor  |
-              |                          |
-              +--+----------+-----------++
-                 |          |           |
-                 |          |           |
-                 v          v           +-------v
-+----------------+--+   +---+---+           +---+---+
-|                   |   |       |           |       |
-|  Ptolemy.Monitor  |   |   P1  |   ....    |   Pn  |
-|                   |   |       |           |       |
-+-------------------+   +-------+           +-------+
-
-```
-
-It would be this Monitor that will be responsible for populating the Application's env (to update the return values of `Application.get_env/2`). The call to `Ptolemy.Monitor.start_link/1` will perform the population according to the configs defined above. For each configuration provider defined in the config, a linked process could be started and managed by the monitor.
-
-Configuration providers would adhere to the behavior defined by `Ptolemy.Provider.Spec`. This spec would enforce each provider to consist of a module that looks something like:
-```elixir
-defmodule Ptolemy.Providers.Vault.KeyValue do
-	use Ptolemy.Provider
-
-	@impl
-	def init_monitor(monitor_pid, config) do
-		# ....
-	end
-
-	@impl
-	def handle_query(query) do
-		# ....
-	end
-end
-```
-
-The behavior declaration would be wrapped in the typical macro style used by other popular frameworks, allowing the addition of powerful helper methods and compile time tricks.
-
-The `handle_query/1` function would handle any queries made to the provider. The query can follow any format as it is provider specific, and usually specified as the argument provided in the config. The result of `handle_query/1` will be the value queried for. In the case of the value cannot be found, `nil` or an error should be returned.
-
-The `init_monitor/2` function will be called to initialize the monitoring of the backend/api bindings the provider will communicate with to respond to queries. An element of note is the presence of the `monitor_pid` argument. The purpose of this argument is to provide a pid to send a message back to the monitor when the provider notices a change in it's backend and wishes to update the application. Upon sending the change event, the `Monitor` will smartly decide based on the configuration if and what process to restart. Possible decisions would include:
-
-* Crashing the monitor. This would - provided the application supervisor is using the `:one_for_all` strategy - would restart the whole application and as a result, the `Monitor` process which will reload the `Application`'s environment
-* Crashing and restarted a particular process with the correct calls to the supervisor
-* Nothing. Code that periodically pulls from `Application.get_env/2` would automatically adapt with the change.
-
-## Built-In Providers
-
-> It is not clear if Ptolemy should come with all, a core few, or no Providers where they will need to be included as separate integration libraries, however the implementations above are designed to be loose enough to support all three strategies, and allow developers to create their own Providers with ease
-
-### Vault
-
-We think the highest value vault engines to support would include:
-
-* GCP
-* Key/Val
-* Cubbyhole
-* PKI
-* TOTP
-* Databases
-
-Initial release would be focused on `Key/Val` support but bindings listed above will be on the road map.
