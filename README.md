@@ -118,3 +118,5 @@ config :ptolemy, Ptolemy,
   - AWS (Bonus)
     - TBD due to lack of internal demand, but AWS engine implementation will be similar to GCP engine's.
 5. Feel free to tell us what features do you want with Ptolemy by opening an issue
+
+Please find more details regarding our redesign in `docs/README.md`
