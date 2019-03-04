@@ -55,6 +55,7 @@ Ptolemy/
 ```
 
 ##### stores/cache.ex
+<<<<<<< HEAD
 `stores/cache.ex` will contain the functions that are responsible for loading secrets from Vault into a designated cache server.
 
 #### stores/generver
@@ -66,6 +67,9 @@ Ptolemy/
 #### loader/refresher.ex
 `loader/refresher.ex` will be responsible for refetching the secret when their ttl expire
 
+=======
+`stores/cache.ex` will be responsible for loading secrets from Vault into Cache. We are still figuring out whether we should also load the secret into Application environment and takes care of the ttls here or in a separate module. I'm leaning towards a another `load` module that manages it.
+>>>>>>> 963260f0d325be3000b32417632d1266549cb828
 
 ##### ptolemy.ex
 `ptolemy.ex` will only contain a generic CRUD functions for users to interact, each function should take in the engine name as a parameter in order to pattern match with the correct support engine to call.  The underneath implementation of CRUD operations should lie within `lib/engines` folder. For example, `kv.ex` would still contain the communication functions, and `kv_server.ex` would be responsible for making the `ptolemy.ex` functions happen.
@@ -140,3 +144,16 @@ config :ptolemy,
 		# ...
 	]
 ```
+
+
+Notes:
+We were considering developing a Ptolemy.Supervisor that restarts process in order to reload the application environment
+
+But, we've reached the consensus that it's unnecessary to implement the Ptolemy supervisor which crashes the process in order to update the application's environment variables.
+
+Reasons are as follow:
+
+1. Forcing our users to use Ptolemy.Supervisor is an over opinionated way of managing application variables. It would require users to give up control to the restart process.
+2. If the user follow the OTP restart practices, they would save the states, including the environment variables, when the process gets terminated. Thus, even letting it crash and reloading the application would not be able refresh their tokens. The application would just keep using the old secrets and keep crashing.
+
+Considering factors above, we will be scrapping the Ptolemy.Supervisor module and Ptolemy will not be responsible for managing lifecycle of applications that stores secrets in their states. Ptolemy will only update secrets in the Applications environment variables as they expire. In order to utilize full capability of Ptolemy, we strongly recommend users to use Application.get_env() and NOT store secrets in states.
