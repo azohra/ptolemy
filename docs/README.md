@@ -55,6 +55,8 @@ condif :ptolemy, env: [
 ]
 ```
 
+> *Caveat:* The proposed configuration only supports top-level configuration values. The intention is to support complex configuration structures with a reference mechanism. As the project evolves we hope to discover a better format.
+
 The providers would implement the `Ptolemy.Provider` behavior. For example:
 ```elixir
 defmodule MyApp.Provider do
