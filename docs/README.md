@@ -106,9 +106,6 @@ Currently, `ptolemy_server.ex` contains CRUD operations for kv engine specifical
 #### Proposal
 ```
 Ptolemy/
-├── config
-│   ├── (secrets.exs)
-│   └── config.exs
 ├── lib
 │   ├── engines
 │   │   ├── kv
@@ -118,32 +115,30 @@ Ptolemy/
 │   │   |   ├── gcp_server.ex
 │   │   |   └── gcp.ex
 │   │   └── ...
-│   ├── stores
-│   │   ├── cache.ex
-│   │   ├── behaviour.ex
-│   │   ├── genserver
-│   │   |   └── genserver.ex
+│   ├── providers
+│   │   ├── provider.ex
+│   │   ├── vault_provider.ex
 │   │   └── ...
-│   ├── loader
+│   ├── loaders
 │   │   ├── loader.ex
-│   │   └── refresher.ex
+│   │   └── vault_loader.ex
+│   │   └── ...
 │   ├── ptolemy.ex
 │   ├── ptolemy_server.ex
 │   └── ...
 └── ...
 ```
 
-##### stores/cache.ex
-`stores/cache.ex` will contain the functions that are responsible for loading secrets from Vault into a designated cache server.
+#### providers
+`providers/provider.ex` specifies behaviours that a provider should implement
 
-#### stores/generver
-`stores/generver` is a naive implementation of a cache server. User may choose to write their own cache server to substitute our default genserver as long as it follows the same behaviour.
+`providers/vault_provider.ex` by default load secrets from vault
 
-#### loader/loader.ex
-`loader/loader.ex` will provide functions that loads secrets from cache server to the application environment variables
 
-#### loader/refresher.ex
-`loader/refresher.ex` will be responsible for refetching the secret when their ttl expire
+#### loaders
+`loader/loader.ex` will provide functions beahviours that loads secrets from provider to the application environment variables
+
+`loader/vault_loader.ex` will be implementation of the loader specific to vault
 
 
 ##### ptolemy.ex
