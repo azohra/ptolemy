@@ -24,7 +24,7 @@ defmodule Ptolemy.Server do
   def start_link(pid, server, opts \\ []) do
     config =
       Application.get_env(:ptolemy, :vaults)
-      |> Map.get(server)
+      |> Keyword.get(server)
       |> overide?(opts)
 
     with {:ok, []} <- validate(config) do
@@ -49,7 +49,7 @@ defmodule Ptolemy.Server do
 
         {:error, _} ->
           with {:ok, tok} <- GenServer.call(pid, :auth, 15000) do
-            tok
+            [Map.fetch!(tok, :token)]
           else
             {:error, _msg} = err -> err
           end

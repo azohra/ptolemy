@@ -3,7 +3,7 @@ use Mix.Config
 config :tesla, adapter: Tesla.Mock
 
 config :ptolemy,
-  vaults: %{
+  vaults: [
     server1: %{
       vault_url: "https://test-vault.com",
       engines: [
@@ -30,12 +30,13 @@ config :ptolemy,
     server2: %{
       vault_url: "https://test-vault.com",
       engines: [
-        kv_engine: %{
-          engine_path: "tools/",
+        kv_engine1: %{
+          engine_type: :KV,
+          engine_path: "secret/",
           secrets: %{
-            ptolemy: "/secret/ptolemy"
-          }
+            test_secret: "/test_secret"
         }
+      }
       ],
       auth: %{
         method: :Approle,
@@ -47,4 +48,4 @@ config :ptolemy,
         opts: []
       }
     }
-  }
+  ]
