@@ -42,12 +42,11 @@ defmodule Ptolemy do
       production: %{
         vault_url: "http://localhost:8200",
         auth_mode: "approle",
-        kv_engine: %{
-          kv_engine1: %{
-            engine_path: "secret/",
-            secrets: %{
-              ptolemy: "/ptolemy"
-            }
+        kv_engine1: %{
+          engine_type: :kv_engine,
+          engine_path: "secret/",
+          secrets: %{
+            ptolemy: "/ptolemy"
           }
         },
         credentials: %{
@@ -66,14 +65,12 @@ defmodule Ptolemy do
       production: %{
         vault_url: "http://localhost:8200",
         auth_mode: "GCP",
-        kv_engine: %{
-          kv_engine1: %{
-            engine_path: "secret/",
-            secrets: %{
-              ptolemy: "/ptolemy"
-            }
-          }
-        },
+        kv_engine1: %{
+          engine_type: :kv_engine,
+          engine_path: "secret/",
+          secrets: %{
+            ptolemy: "/ptolemy"
+        }
         credentials: %{
           svc_acc: System.get_env("GOOGLE_SVC_ACC"),
           target_audience: System.get_env("TARGET_AUD") #Not required if :iap_on is false
@@ -85,9 +82,10 @@ defmodule Ptolemy do
       }
     ```
   """
+  require Logger
+
   alias Ptolemy.Server
   alias Ptolemy.Engines.KV
-
   @doc """
   Entrypoint of ptolemy, this will start the process and store all necessary state for a connection to a remote vault server.
   """
@@ -96,222 +94,134 @@ defmodule Ptolemy do
   end
 
   @doc """
-  Read a specific key from given secret via the `:kv_engine` configuration.
-
-  Specifying a version will read that specific version.
-
-  ## Example
-  ```elixir
-  iex(2)> Ptolemy.kv_cread(:production, :kv_engine1, :ptolemy, "foo")
-  {:ok, "test"} 
-  ```
-  """
-  def kv_cread(pid, engine_name, secret, key, version \\ 0) do
-    path = get_kv_path!(pid, engine_name, secret, "data")
-    kv_read(pid, path, key, version)
-  end
-
-  @doc """
-  Read a specific key from given secret via a KV engine.
-
-  ## Example
-  ```elixir
-  iex(2)> Ptolemy.kv_cread(:production, "secret/data/ptolemy", "foo")
-  {:ok, "test"} 
-  ```
-  """
-  def kv_read(pid, secret_path, key, version \\ 0) do
-    with map <- kv_fetch!(pid, secret_path, true, version),
-      {:ok, values} <- Map.fetch(map, key)
-    do
-      {:ok, values}
-    else
-      :error -> {:error, "Could not find: #{key} in the remote vault server"}
-    end
-  end
-
-  @doc """
-  Fetches all of a secret's keys and value via the `:kv_engine` configuration.
+  create secrets
+  opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
   
-  See `kv_fetch!/2` for the description of the silent and version options.
-
-  ## Example
-  ```elixir
-  iex(2)> Ptolemy.kv_cfetch!(:production, :kv_engine1, :ptolemy)
-  %{ 
-      "Foo" => test"
-      ...
-    } 
-  ```
+  :kv_engine
+    1. secret (Required, path of the secret)
+    2. payload (Required, content of the secret)
+    3. cas (Optional, default: nil)
+  
+  :gcp_engine
   """
-  def kv_cfetch!(pid, engine_name, secret, silent \\ false, version \\ 0) do
-    path = get_kv_path!(pid, engine_name, secret, "data")
-    kv_fetch!(pid, path, silent, version)
-  end
-
-  @doc """
-  Fetches all of a  given secret's key and values from a KV engine
-
-  This function returns the full reponse of the remote vault server, enabling the silent option will only return a map with the key and value
-  of the secret. The version option will allow you to fetch specific version of the target secret.
-
-  ## Example
-  ```elixir
-  iex(2)> Ptolemy.kv_fetch!(:production, "secret/data/ptolemy")
-  %{ 
-      "Foo" => test"
-      ...
-    } 
-  ```
-  """
-  def kv_fetch!(pid, secret, silent \\ false, version \\ 0) when is_bitstring(secret) do
-    client = create_client(pid)
-    opts = [version: version]
-
-    resp = KV.read_secret!(client, secret, opts)
-
-    case silent do
-      true -> 
-        resp
-        |> Map.get("data")
-        |> Map.get("data")
-      false ->
-        resp
+  def create(pid, engine_name, opts \\ []) do
+    case get_engine_type(pid, engine_name) do
+      :kv_engine -> 
+        Kernel.apply(KV, :kv_create!, [pid | opts])
+      :gcp_engine -> 
+        Logger.info("Not implemented yet")
     end
   end
 
   @doc """
-  Updates an already existing secret via the `:kv_engine` configuration.
+  fetches all secrets from vault path
+  
+  opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
 
-  ## Example
-  ```elixir
-  iex(2)> Ptolemy.kv_cupdate!(:production, :engine1, :ptolemy, %{test: "asda"}, 1)
-  200
-  ```
+  :kv_engine
+    1. secret (Required)
+    2. silent (Optional, default: false)
+    3. version (Optional, default: 0)
   """
-  def kv_cupdate!(pid, engine_name, secret, payload, cas \\ nil) do
-    path = get_kv_path!(pid, engine_name, secret, "data")
-    kv_create!(pid, path, payload, cas)
+  def fetch(pid, engine_name, opts \\ []) do
+    case get_engine_type(pid, engine_name) do
+      :kv_engine -> 
+        Kernel.apply(KV, :kv_cfetch!, [pid, engine_name] ++ opts)
+      :gcp_engine -> 
+        Logger.info("Not implemented yet")
+        {:error, "Not implemented"}
+    end
   end
 
   @doc """
-  Updates an already existing secret.
+  read a specified secret from 
+  
+  opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
 
-  ## Example
-  ```elixir
-  iex(2)> Ptolemy.kv_update!(:production, "secret/data/ptolemy", %{test: "asda"}, 1)
-  200
-  ```
+  :kv_engine
+    1. secret (Required)
+    2. key (Required)
+    3. version (Optional, default: 0)
   """
-  def kv_update!(pid, secret, payload, cas \\ nil) when is_bitstring(secret) do
-    kv_create!(pid, secret, payload, cas)
+  def read(pid, engine_name, opts \\ []) do
+    case get_engine_type(pid, engine_name) do
+      :kv_engine -> 
+        Kernel.apply(KV, :kv_cread, [pid, engine_name] ++ opts)
+      :gcp_engine -> 
+        Logger.info("Not implemented yet")
+        {:error, "Not implemented"}
+      end
   end
 
   @doc """
-  Creates a new secret via a KV engine
+  Updates a secret
+  
+  opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
 
-  ## Example
-  ```elixir
-  iex(2)> Ptolemy.kv_create!(:production, "secret/data/new", %{test: "test"}, 1)
-  200
+  :kv_engine
+    1. secret (Required)
+    2. payload (Required)
+    3. cas (Optional, default: nil)
   """
-  def kv_create!(pid, secret, payload, cas \\ nil) when is_bitstring(secret) do
-    client = create_client(pid)
-    KV.create_secret!(client, secret, payload, cas)
+  def update(pid, engine_name, opts \\ []) do
+    case get_engine_type(pid, engine_name) do
+      :kv_engine -> 
+        Kernel.apply(KV, :kv_cupdate!, [pid, engine_name] ++ opts)
+      :gcp_engine -> 
+        Logger.info("Not implemented yet")
+        {:error, "Not implemented"}
+      end
   end
 
   @doc """
-  Deletes a secific version of a secret via the `:kv_engine` configuration.
+  Delete a secret
+  
+  opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
 
-  ```elixir
-  iex(2)> Ptolemy.kv_cdelete!(:production, :engine1, :ptolemy, [1,2])
-  204
-  ```
+  :kv_engine
+    1. secret (Required)
+    2. vers (Required)
   """
-  def kv_cdelete!(pid, engine_name, secret, vers) do
-    path = get_kv_path!(pid, engine_name, secret, "delete")
-    kv_delete!(pid, path, vers)
+  def delete(pid, engine_name, opts \\ []) do
+    case get_engine_type(pid, engine_name) do
+      :kv_engine -> 
+        Kernel.apply(KV, :kv_cdelete!, [pid, engine_name] ++ opts)
+      :gcp_engine -> 
+        Logger.info("Not implemented yet")
+        {:error, "Not implemented"}
+    end
   end
 
   @doc """
-  Deletes a secific version of a secret.
+  Destroy a secret, differ from delete for some engines, such as KV
+  
+  opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
 
-  ```elixir
-  iex(2)> Ptolemy.kv_delete!(:production, "secret/delete/ptolemy", [1,2])
-  204
-  ```
+  :kv_engine
+    1. secret (Required)
+    2. vers (Required)
   """
-  def kv_delete!(pid, secret, vers) do
-    client = create_client(pid)
-    KV.delete!(client, secret, vers)
+  def destroy(pid, engine_name, opts \\ []) do
+    case get_engine_type(pid, engine_name) do
+      :kv_engine -> 
+        Kernel.apply(KV, :kv_cdestroy!, [pid, engine_name] ++ opts)
+      :gcp_engine ->
+         Logger.info("Not implemented yet")
+         {:error, "Not implemented"}
+    end
   end
 
   @doc """
-  Destroys a secific version of a secret via the `:kv_engine` configuration.
-
-  ```elixir
-  iex(2)> Ptolemy.kv_cdestroy!(:production, :engine1, :ptolemy, [1,2])
-  204
-  ```
+  Helper function used to determine what type does the engine correspond to
   """
-  def kv_cdestroy!(pid, engine_name, secret, vers) do
-    path = get_kv_path!(pid, engine_name, secret, "destroy")
-    kv_destroy!(pid, path, vers)
-  end
-
-  @doc """
-  Destroys a specific version of secret.
-
-  ```elixir
-  iex(2)> Ptolemy.kv_destroy!(:production, "secret/destroy/ptolemy", [1,2])
-  204
-  ```
-  """
-  def kv_destroy!(pid, secret, vers) do
-    client = create_client(pid)
-    KV.destroy!(client, secret, vers)
-  end
-
-  #Tesla client function
-  defp create_client(pid) do
-    creds = Server.fetch_credentials(pid)
-    {:ok, url} = Server.get_data(pid, :vault_url)
-
-    Tesla.client([
-      {Tesla.Middleware.BaseUrl, "#{url}/v1"},
-      {Tesla.Middleware.Headers, creds},
-      {Tesla.Middleware.JSON, []}
-    ])
-  end
-
-  #Helper functions to make paths
-  defp get_kv_path!(pid, engine_name, secret, operation) when is_atom(secret) do
-    with {:ok, kv_conf} <- Server.get_data(pid, :kv_engine),
-      {:ok, kvname} <- Map.fetch(kv_conf, engine_name),
-      %{engine_path: path, secrets: secrets} <- kvname
+  defp get_engine_type(pid, engine_name) do
+    with {:ok, engine_conf} <- Server.get_data(pid, engine_name),
+      {:ok, engine_type} <- Map.fetch(engine_conf, :engine_type)
     do
-      {:ok, secret_path} = Map.fetch(secrets, secret)
-      make_kv_path!(path, secret_path, operation)
+      engine_type
     else
-      {:error, "Not found!"} -> throw "#{pid} does not have a kv_engine config"
-      :error -> throw "Could not find engine_name in specified config"
+      {:error, "Not found!"} -> throw "#{pid} does not have a engine config for #{engine_name}"
+      {:error} -> throw "Could not find :engine_type in engine_conf"
     end
   end
-
-  defp get_kv_path!(pid, engine_name, secret, operation) when is_bitstring(secret) do
-    with {:ok, kv_conf} <- Server.get_data(pid, :kv_engine),
-      {:ok, kvname} <- Map.fetch(kv_conf, engine_name),
-      %{engine_path: path, secrets: _ } <- kvname
-    do
-      make_kv_path!(path, secret, operation)
-    else
-      {:error, "Not found!"} -> throw "#{pid} does not have a kv_engine config"
-      :error -> throw "Could not find engine_name in specified config"
-    end
-  end
-
-  defp make_kv_path!(engine_path, secret_path, operation) do
-    "/#{engine_path}#{operation}#{secret_path}"
-  end
-
 end
