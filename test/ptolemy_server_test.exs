@@ -133,12 +133,13 @@ defmodule PtolemyServerTest do
               %{
                 vault_url: "https://test-vault.com",
                 engines: [
-                  kv_engine: %{
-                    engine_path: "tools/",
+                  kv_engine1: %{
+                    engine_type: :KV,
+                    engine_path: "secret/",
                     secrets: %{
-                      ptolemy: "/secret/ptolemy"
-                    }
+                      test_secret: "/test_secret"
                   }
+                }
                 ],
                 auth: %{
                   method: :Approle,
@@ -154,16 +155,11 @@ defmodule PtolemyServerTest do
 
   test "approle auth and fetch credentials" do
     {:ok, server} = Server.start_link(:vault1, :server2)
-
-    creds = %{
-      lease_duration: 2_764_800,
-      renewable: true,
-      token: {"X-Vault-Token", "98a4c7ab-FAKE-361b-ba0b-e307aacfd587"}
-    }
-
-    # errors out during fetch and triggers auth, then creates `token` key in state
-    assert Server.fetch_credentials(server) === creds
-    # pulls token field without error
+    # The first time is fetched from the endpoint
+    assert Server.fetch_credentials(server) === [
+      {"X-Vault-Token", "98a4c7ab-FAKE-361b-ba0b-e307aacfd587"}
+    ]
+    # pulls token field without error from the server
     assert Server.fetch_credentials(server) === [
              {"X-Vault-Token", "98a4c7ab-FAKE-361b-ba0b-e307aacfd587"}
            ]
@@ -173,7 +169,7 @@ defmodule PtolemyServerTest do
     # default server map in test config
     state =
       Application.get_env(:ptolemy, :vaults)
-      |> Map.fetch!(:server1)
+      |> Keyword.fetch!(:server1)
 
     # server 2 auth map with auto_renew set to false
     non_renewed_approle_auth =
@@ -219,7 +215,7 @@ defmodule PtolemyServerTest do
     # default server2 map in test config
     state =
       Application.get_env(:ptolemy, :vaults)
-      |> Map.fetch!(:server2)
+      |> Keyword.fetch!(:server2)
 
     # server2 auth map with auto_renew set to false
     non_renewed_approle_auth =
@@ -254,7 +250,7 @@ defmodule PtolemyServerTest do
   test "purge" do
     state =
       Application.get_env(:ptolemy, :vaults)
-      |> Map.fetch!(:server2)
+      |> Keyword.fetch!(:server2)
 
     state_vault_token =
       state
@@ -280,7 +276,7 @@ defmodule PtolemyServerTest do
   test "auto renew iap" do
     state =
       Application.get_env(:ptolemy, :vaults)
-      |> Map.fetch!(:server1)
+      |> Keyword.fetch!(:server1)
 
     state_exp_iap =
       state
@@ -308,7 +304,7 @@ defmodule PtolemyServerTest do
   test "approle auto renew vault" do
     state =
       Application.get_env(:ptolemy, :vaults)
-      |> Map.fetch!(:server2)
+      |> Keyword.fetch!(:server2)
 
     %{
       vault_url: url,
@@ -334,7 +330,7 @@ defmodule PtolemyServerTest do
   test "auto renew vault GCP" do
     state =
       Application.get_env(:ptolemy, :vaults)
-      |> Map.fetch!(:server1)
+      |> Keyword.fetch!(:server1)
 
     %{
       vault_url: url,

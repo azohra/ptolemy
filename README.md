@@ -41,7 +41,7 @@ There are two configuration blocks that exist in ptolemy as of version `0.2`. Bo
 The `:vaults` key configure's ptolemy various backend providers(Hashicorp vault is the only backend currently supported). Each key within the `:vaults` block represents a specific server in which ptolemy can query to retrieve values such as application secrets currently stored in vault.
 
 ```elixir
-config :ptolemy, vaults: %{
+config :ptolemy, vaults: [
   server_name: %{
     vault_url: "",
     auth: %{
@@ -51,14 +51,14 @@ config :ptolemy, vaults: %{
     },
     engines: [
       engine_name: %{
-        type: :kv2,
-        path: "/path",
+        type: :KV,
+        pathName: "/path",
         #....
       }
     ]
   }
   # server_name2: %{...}
-}
+]
 ```
 Additional details about usage the keys within the `:vaults` configuration block can be found it the [documentations](https://hexdocs.pm/ptolemy/0.2.0/Ptolemy.html#content). 
 
