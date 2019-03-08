@@ -150,10 +150,10 @@ defmodule Ptolemy.Engines.KV do
   def kv_cdelete!(pid, engine_name, secret, vers, destroy \\ false) do
     case destroy do
       true -> 
-        path = get_kv_path!(pid, engine_name, secret, "delete")
+        path = get_kv_path!(pid, engine_name, secret, "destroy")
         kv_delete!(pid, path, vers)
       false -> 
-        path = get_kv_path!(pid, engine_name, secret, "destroy")
+        path = get_kv_path!(pid, engine_name, secret, "delete")
         kv_destroy!(pid, path, vers)
     end
   end
