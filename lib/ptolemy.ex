@@ -47,7 +47,10 @@ defmodule Ptolemy do
           engine_path: "secret/",
           secrets: %{
             ptolemy: "/ptolemy"
-          }
+          },
+          app_map: [
+            var1: "test"
+        ]
         },
         credentials: %{
           role_id: System.get_env("ROLE_ID"),
@@ -70,6 +73,10 @@ defmodule Ptolemy do
           engine_path: "secret/",
           secrets: %{
             ptolemy: "/ptolemy"
+          },
+          app_map: [
+          var1: "test"
+          ]
         }
         credentials: %{
           svc_acc: System.get_env("GOOGLE_SVC_ACC"),
@@ -89,6 +96,7 @@ defmodule Ptolemy do
   @doc """
   Entrypoint of ptolemy, this will start the process and store all necessary state for a connection to a remote vault server.
   """
+  @spec start(atom, atom) :: {:ok, pid} | {:error, String.t()}
   def start(name, config) do
     Server.start_link(name, config)
   end
@@ -104,12 +112,14 @@ defmodule Ptolemy do
   
   :gcp_engine
   """
+  @spec create(pid, atom, [any]) :: :ok | :error  | {:error, any}
   def create(pid, engine_name, opts \\ []) do
     case get_engine_type(pid, engine_name) do
       :kv_engine -> 
         Kernel.apply(KV, :kv_create!, [pid | opts])
       :gcp_engine -> 
         Logger.info("Not implemented yet")
+        {:error, "GCP is not implemented yet"}
     end
   end
 
@@ -125,6 +135,7 @@ defmodule Ptolemy do
   
     use silent option if you only want the data
   """
+  @spec read(pid, atom, [any]) :: {:ok, any} | :error | {:error, any}
   def read(pid, engine_name, opts \\ []) do
     case get_engine_type(pid, engine_name) do
       :kv_engine -> 
@@ -145,6 +156,7 @@ defmodule Ptolemy do
     2. payload (Required)
     3. cas (Optional, default: nil)
   """
+  @spec update(pid, atom, [any]) :: :ok | :error  | {:error, any}
   def update(pid, engine_name, opts \\ []) do
     case get_engine_type(pid, engine_name) do
       :kv_engine -> 
@@ -166,16 +178,15 @@ defmodule Ptolemy do
     3. destroy (Optional, default: false)
     
     destroy will leave no trace of the secret
-    """
+  """
+  @spec delete(pid, atom, [any]) :: :ok | :error  | {:error, any}
   def delete(pid, engine_name, opts \\ []) do
     case get_engine_type(pid, engine_name) do
       :kv_engine -> 
-        [secret, vers, destroy] = opts
-        if destroy do
-          Kernel.apply(KV, :kv_cdestroy!, [pid, engine_name, secret, vers])
-        else
-          Kernel.apply(KV, :kv_cdelete!, [pid, engine_name, secret, vers])
-        end
+      #     Kernel.apply(KV, :kv_cdestroy!, [pid, engine_name, secret, vers])
+      #   else
+          Kernel.apply(KV, :kv_cdelete!, [pid, engine_name] ++ opts)
+
       :gcp_engine -> 
         Logger.info("Not implemented yet")
         {:error, "Not implemented"}

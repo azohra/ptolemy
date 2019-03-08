@@ -81,14 +81,18 @@ defmodule Ptolemy.Engines.KV do
     opts = [version: version]
 
     resp = Engine.read_secret!(client, secret, opts)
-
-    case silent do
-      true -> 
-        resp
-        |> Map.get("data")
-        |> Map.get("data")
-      false ->
-        resp
+    case resp do
+      %{} ->     
+        case silent do
+          true -> 
+            {:ok ,resp
+            |> Map.get("data")
+            |> Map.get("data")
+            }
+          false ->
+            {:ok, resp}
+        end
+      _ -> {:error, "Fetch from kv engine failed"}
     end
   end
 
@@ -129,7 +133,10 @@ defmodule Ptolemy.Engines.KV do
   """
   def kv_create!(pid, secret, payload, cas \\ nil) when is_bitstring(secret) do
     client = create_client(pid)
-    Engine.create_secret!(client, secret, payload, cas)
+    case Engine.create_secret!(client, secret, payload, cas) do
+      status when status in 200..299 -> :ok
+      _ -> :error
+    end
   end
 
   @doc """
@@ -140,9 +147,15 @@ defmodule Ptolemy.Engines.KV do
   204
   ```
   """
-  def kv_cdelete!(pid, engine_name, secret, vers) do
-    path = get_kv_path!(pid, engine_name, secret, "delete")
-    kv_delete!(pid, path, vers)
+  def kv_cdelete!(pid, engine_name, secret, vers, destroy \\ false) do
+    case destroy do
+      true -> 
+        path = get_kv_path!(pid, engine_name, secret, "delete")
+        kv_delete!(pid, path, vers)
+      false -> 
+        path = get_kv_path!(pid, engine_name, secret, "destroy")
+        kv_destroy!(pid, path, vers)
+    end
   end
 
   @doc """
@@ -155,7 +168,10 @@ defmodule Ptolemy.Engines.KV do
   """
   def kv_delete!(pid, secret, vers) do
     client = create_client(pid)
-    Engine.delete!(client, secret, vers)
+    case Engine.delete!(client, secret, vers) do
+      status when status in 200..299 -> :ok
+      _ -> :error
+    end
   end
 
   @doc """
@@ -181,7 +197,10 @@ defmodule Ptolemy.Engines.KV do
   """
   def kv_destroy!(pid, secret, vers) do
     client = create_client(pid)
-    Engine.destroy!(client, secret, vers)
+    case Engine.destroy!(client, secret, vers) do
+      status when status in 200..299 -> :ok
+      _ -> :error
+    end
   end
 
   #Tesla client function
