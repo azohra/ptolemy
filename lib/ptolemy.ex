@@ -114,7 +114,7 @@ defmodule Ptolemy do
   end
 
   @doc """
-  fetches all secrets from vault path
+  read all secrets from vault path
   
   opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
 
@@ -122,8 +122,10 @@ defmodule Ptolemy do
     1. secret (Required)
     2. silent (Optional, default: false)
     3. version (Optional, default: 0)
+  
+    use silent option if you only want the data
   """
-  def fetch(pid, engine_name, opts \\ []) do
+  def read(pid, engine_name, opts \\ []) do
     case get_engine_type(pid, engine_name) do
       :kv_engine -> 
         Kernel.apply(KV, :kv_cfetch!, [pid, engine_name] ++ opts)
@@ -131,26 +133,6 @@ defmodule Ptolemy do
         Logger.info("Not implemented yet")
         {:error, "Not implemented"}
     end
-  end
-
-  @doc """
-  read a specified secret from 
-  
-  opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
-
-  :kv_engine
-    1. secret (Required)
-    2. key (Required)
-    3. version (Optional, default: 0)
-  """
-  def read(pid, engine_name, opts \\ []) do
-    case get_engine_type(pid, engine_name) do
-      :kv_engine -> 
-        Kernel.apply(KV, :kv_cread, [pid, engine_name] ++ opts)
-      :gcp_engine -> 
-        Logger.info("Not implemented yet")
-        {:error, "Not implemented"}
-      end
   end
 
   @doc """
@@ -181,33 +163,22 @@ defmodule Ptolemy do
   :kv_engine
     1. secret (Required)
     2. vers (Required)
-  """
+    3. destroy (Optional, default: false)
+    
+    destroy will leave no trace of the secret
+    """
   def delete(pid, engine_name, opts \\ []) do
     case get_engine_type(pid, engine_name) do
       :kv_engine -> 
-        Kernel.apply(KV, :kv_cdelete!, [pid, engine_name] ++ opts)
+        [secret, vers, destroy] = opts
+        if destroy do
+          Kernel.apply(KV, :kv_cdestroy!, [pid, engine_name, secret, vers])
+        else
+          Kernel.apply(KV, :kv_cdelete!, [pid, engine_name, secret, vers])
+        end
       :gcp_engine -> 
         Logger.info("Not implemented yet")
         {:error, "Not implemented"}
-    end
-  end
-
-  @doc """
-  Destroy a secret, differ from delete for some engines, such as KV
-  
-  opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
-
-  :kv_engine
-    1. secret (Required)
-    2. vers (Required)
-  """
-  def destroy(pid, engine_name, opts \\ []) do
-    case get_engine_type(pid, engine_name) do
-      :kv_engine -> 
-        Kernel.apply(KV, :kv_cdestroy!, [pid, engine_name] ++ opts)
-      :gcp_engine ->
-         Logger.info("Not implemented yet")
-         {:error, "Not implemented"}
     end
   end
 
