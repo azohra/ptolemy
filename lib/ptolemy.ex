@@ -183,8 +183,6 @@ defmodule Ptolemy do
   def delete(pid, engine_name, opts \\ []) do
     case get_engine_type(pid, engine_name) do
       :kv_engine -> 
-      #     Kernel.apply(KV, :kv_cdestroy!, [pid, engine_name, secret, vers])
-      #   else
           Kernel.apply(KV, :kv_cdelete!, [pid, engine_name] ++ opts)
 
       :gcp_engine -> 
