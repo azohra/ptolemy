@@ -1,133 +1,198 @@
 defmodule Ptolemy.Auth do
   @moduledoc """
   `Ptolemy.Auth` provides authentication implementations to a remote vault server.
+
+  ## Usage
+  All token request should call the `Ptolemy.Auth.authenticate/4` function and *not* the `c:authenticate/3` callback found
+  in each modules implementing this behaviour!
+
+  Here are a few examples of the usage:
+  ```elixir
+  #Approle, no IAP
+  Ptolemy.Auth.authenticate(:Approle, "https://test-vault.com", %{secret_id: "test", role_id; "test"}, [])
   
-  As of the current version of this documentation the only supported auth methods that ptolemy supports is GCP and Approle auth methods.
+  #Approle with IAP
+  Ptolemy.Auth.authenticate(:Approle, "https://test-vault.com", %{secret_id: "test", role_id; "test"}, [iap_svc_acc:  @gcp_svc1_with_vault_perm, client_id: @fake_id, exp: 2000])
+  
+  #Approle with IAP and `bearer` token being re-used
+  Ptolemy.Auth.authenticate(:Approle, "https://test-vault.com", %{secret_id: "test", role_id: "test"}, {"Authorization", "Bearer 98a4c7ab98a4c7ab98a4c7ab"})
+  
+  #GCP with no IAP
+  Ptolemy.Auth.authenticate(:GCP, "https://test-vault.com", my_svc, [])
+  
+  #GCP with IAP, 2 Google service accounts, one for vault one for IAP
+  Ptolemy.Auth.authenticate(:GCP, @vurl, %{gcp_svc_acc: @gcp_svc1_with_vault_perm, vault_role: "test", exp: 3000}, [iap_svc_acc:  my_svc, client_id: @fake_id, exp: 2000])
+  
+  #GCP with IAP, re-using the same GCP service account being used to authenticate to vault inorder to auth into IAP
+  Ptolemy.Auth.authenticate(:GCP, @vurl, %{gcp_svc_acc: @gcp_svc1_with_vault_perm, vault_role: "test", exp: 3000}, [iap_svc_acc:  :reuse, client_id: @fake_id, exp: 2000])
+ 
+  #GCP with IAP and `bearer` token being re-used
+  Ptolemy.Auth.authenticate(:GCP, @vurl, %{gcp_svc_acc: @gcp_svc1_with_vault_perm, vault_role: "test", exp: 3000}, {"Authorization", "Bearer 98a4c7ab98a4c7ab98a4c7ab"})
+  ```
   """
 
-  alias Ptolemy.Google.Auth, as: Gauth
+  @typedoc """
+  Vault authentication data.
+  """
+  @type vault_auth_data ::
+    %{
+      token: {String.t(), String.t()},
+      renewable: boolean(), 
+      lease_duration: pos_integer()
+    }
 
-  @sealed_msg "The vault server is sealed, something terrible has happened!"
+  @typedoc """
+  Google Identity Aware Proxy authentication data.
+  """
+  @type iap_auth_data ::
+    %{
+      token: {String.t(), String.t()}
+    }
 
-  @default_exp 900 #Default expiration for tokens
+  @typedoc """
+  Credential data needed to authenticated to a remote vault server.
+
+  Each specific auth method's credential data have a different schema.
+  """
+  @type cred_data :: 
+    %{ 
+      gcp_svc_acc: map(), 
+      vault_role: String.t(), 
+      exp: pos_integer()
+    } 
+    | %{
+        secret_id:  String.t(), 
+        role_id:  String.t()
+      }
+
+  @typedoc """
+  Authentication options, used to specify IAP credentials and other future authentication options.
+
+  If under the `:iap_svc_acc` key `:reuse` is specified and the auth method was set to `:GCP`, `Ptolemy.Auth` 
+  will attempt to re-use the GCP service account specified under the supplied `cred_data` type. 
+
+  `:client_id` is the OAuth2 client id, this can be found in Security -> Identity-Aware-Proxy -> Select the IAP resource -> Edit OAuth client.
+  
+  `:exp` is the validity period for the token in seconds, google's API specifies that a token can only be valid for up to 3600 seconds.
+
+  Specifying a tuple of type {"Authorization", "Bearer ....."} will notify `Ptolemy.Auth.authenticate/4` to reuse the token to prevent
+  exessive auhtnetication calls to IAP.
+  """
+  @type iap_auth_opts :: 
+    [] 
+    | [iap_svc_acc: map(), client_id: String.t(), exp: pos_integer()]
+    | [iap_svc_acc: :reuse, client_id: String.t(), exp: pos_integer()]
+    | {String.t(), String.t()}
+
+  @typedoc """
+  Atoms representing the authentication methods that is currently supported on ptolemy.
+
+  Currently supported methods are:
+    - GCP -> `:GCP`
+    - Approle -> `:Approle`
+  """
+  @type auth_method :: :GCP | :Approle
+
+  @typedoc """
+  List representing an IAP token.
+
+  The token type returned from a sucessfull IAP call will always be of type `Authorization Bearer`.
+  """
+  @type iap_tok :: [] | [{String.t(), String.t()}]
 
   @doc """
-  Authenticates a credential to a remote vault server. 
-  
-  A list containing needed authorization tokens. The list returned is compatible with tesla's middleware adapters.
-  
-  Currently available options are:
-    - `iap_on`
-      - This option can be set to either true or false. Setting it to true will allow your request to pass through
-      Google's Identity Aware Proxy.
-    - `exp`
-      - The expiry that the access tokens will be valid for. This is depended on the remote vault server's configuration
-      and whether GCP auth is being performed. 
-      - Keep in mind Google does not allow you to create tokens that have an exp value larger than 3600 seconds (1 hour)
-      - Vault on the other hand is configurable but generally speaking has a validity period of atleast 900 seconds (15 min).
+  Authentication method specific callback to be implemented by different modules.
+
+  Each modules representing a specific authentication method should implement this callback in its own module.
   """
-  def authenticate!(credential, auth_mode, url, opt \\ []) do
-    iap = opt |> Keyword.get(:iap_on, false)
-    exp = opt |> Keyword.get(:exp, @default_exp)
-    case {auth_mode, iap} do
-      {"GCP", _ } ->  
-        role = opt |> Keyword.get(:role, "default")
-        google_svc = credential |> Map.fetch!(:svc_acc) |> Gauth.parse_svc()
-        iap_tok = 
-          if iap do
-            client_id = credential |> Map.fetch!(:target_audience)
-            [Gauth.gen_iap_token(google_svc, client_id, exp)]
-          else
-            []
-          end
-        toks =
-          google_svc
-          |> google_auth!(url, exp, iap_tok, [role: role ])
-        [toks | iap_tok]
+  @callback authenticate(endpoint :: String.t(), cred_data, iap_tok) :: vault_auth_data | {:error, String.t()}
 
-      {"approle", _ } -> 
-        iap_tok = 
-          if iap do
-            google_svc = credential |> Map.fetch!(:svc_acc) |> Gauth.parse_svc()
-            client_id = credential |> Map.fetch!(:target_audience)
-            [Gauth.gen_iap_token(google_svc, client_id, exp)]
-          else
-            []
-          end
-        toks =
-          credential
-          |> approle_auth!(url, iap_tok)
-        [toks | iap_tok]
+  @doc """
+  Authenticates against a remote vault server with specified auth strategy and options.
+
+  Currently the only supported options deals with IAP.
+
+  Note Specifying an empty list or a tuple to this function under `iap_auth_opts` will *NOT* return an IAP token and IAP credentials metadata.
+  """
+  @spec authenticate(auth_method, String.t(), cred_data, iap_auth_opts) :: 
+    vault_auth_data 
+    | %{vault: vault_auth_data, iap: iap_auth_data} 
+    | {:error, String.t()}
+  def authenticate(method, url, credentials, opts)
   
-      { _, _ } -> throw {:error, "Authentication mode not supported"}
-    end
+  #IAP not defined or not enabled
+  def authenticate(method, url, credentials, [] = opts) do
+    auth(method, url, credentials, opts)
   end
 
-  # Authenticates using the Approle authentication method.
-  defp approle_auth!(creds, url, iap_tok), do: auth!(creds, url, "/auth/approle/login", iap_tok)
-
-  # Authenticates using the gcp authentication method.
-  defp google_auth!(creds, url, exp, iap_tok, opt) do 
-    str = opt |> Keyword.get(:role, "default") 
-
-    vault_claim = %{
-      sub: Map.fetch!(creds, "client_email"),
-      aud:  "vault/#{str}",
-      exp: exp + Joken.current_time()
-    }
-    |> Jason.encode!
-
-    signed_jwt =
-      creds
-      |> Gauth.gen_signed_jwt!(vault_claim, exp)
-
-    payload = %{
-      role:  "#{str}",
-      jwt: "#{signed_jwt}"
-    }
-
-    auth!(payload, url, "/auth/gcp/login", iap_tok)
+  #Re-use IAP Bearer tokens
+  def authenticate(method, url, credentials, {"Authorization", bearer} = opts) do
+    auth(method, url, credentials, [opts])
   end
 
-  # Check the status of the remote vault.
-  defp check_health(client) do
-    with {:ok, resp} <- Tesla.get(client, "/sys/health"),
-      {:ok, sealed} <- Map.fetch(resp.body, "sealed") 
-    do
-      case sealed do 
-        false -> :ok
-        true -> :sealed
-      end
-    end
+  #IAP is enabled and has a seperate service account.
+  def authenticate(method, url, credentials, [iap_svc_acc: svc, client_id: cid, exp: exp]) when is_map(svc) do
+    iap_tok = Ptolemy.Auth.Google.authenticate(:iap, svc, cid, exp)
+    vault_tok = auth(method, url, credentials, [iap_tok])
+
+    %{vault: vault_tok, iap: %{token: iap_tok}}
   end
 
+  #IAP is enabled with instruction to re-use `credentials` as the IAP service account
+  def authenticate(method, url, credentials, [iap_svc_acc: :reuse, client_id: cid, exp: exp]) do
+    iap_tok = Ptolemy.Auth.Google.authenticate(:iap, credentials[:gcp_svc_acc], cid, exp)
+    vault_tok = auth(method, url, credentials, [iap_tok])
 
-  # Authenticates to a remote vault server.
-  defp auth!(payload, url, auth_endp, iap_tok) do
-    client =
-      Tesla.client([
-        {Tesla.Middleware.BaseUrl, "#{url}/v1"},
-        {Tesla.Middleware.Headers, iap_tok},
-        {Tesla.Middleware.JSON, []}
-      ])
+    %{vault: vault_tok, iap: %{token: iap_tok}}
+  end
 
-    with {:ok, resp} <- Tesla.post(client, auth_endp, payload),
-        :ok <- check_health(client)
-    do
+  defp auth(method, url, credentials, opts) do
+    auth_type = Module.concat(Ptolemy.Auth, method)
+    auth_type.authenticate(url, credentials, opts)
+  end
+
+  @doc """
+  Sends a payload to a remote vault server's authentication endpoint.
+  """
+  @spec login(%Tesla.Client{}, String.t(), map()) :: vault_auth_data | {:error, String.t()}
+  def login(client, auth_endp, payload) do
+    with {:ok, resp} <- Tesla.post(client, auth_endp, payload) do
       case {resp.status, resp.body} do
         {status, body} when status in 200..299 ->
-          tok =
-            body
-            |> Map.fetch!("auth")
-            |> Map.fetch!("client_token")           
-          {"X-Vault-Token", tok}
-
+          parse_vault_resp(body)
+          
         {status, body} ->
           message = Map.fetch!(body, "errors")
-          throw {:error, "Authentication failed, Status: #{status} with error: #{message}"}
+          {:error, "Authentication failed, Status: #{status} with error: #{message}"}
       end
-    else
-      :sealed -> raise @sealed_msg
+    else  
+      err -> err
     end
+  end
+
+
+  @doc """
+  Creates a `%Tesla.Client{}` pointing to a remote vault server.
+  """
+  @spec vault_auth_client(String.t(), iap_auth_opts) :: %Tesla.Client{}
+  def vault_auth_client(url, iap_tok) do
+    Tesla.client([
+      {Tesla.Middleware.BaseUrl, "#{url}/v1"},
+      {Tesla.Middleware.Headers, iap_tok},
+      {Tesla.Middleware.JSON, []}
+    ])
+  end
+
+  #parses auth body to return relevant information
+  defp parse_vault_resp(body) do
+    %{
+      "auth" => %{
+        "client_token" => client_token,
+        "renewable" => renewable,
+        "lease_duration" => lease_duration
+      }
+    } = body
+
+    %{token: {"X-Vault-Token", client_token}, renewable: renewable, lease_duration: lease_duration}
   end
 end
