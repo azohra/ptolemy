@@ -13,9 +13,13 @@ defmodule Ptolemy.MixProject do
       name: "Ptolemy",
       source_url: "https://github.com/azohra/ptolemy",
       docs: [
-        main: "README.md", # The main page in the docs
+        # The main page in the docs
+        main: "README.md",
         logo: "assets/logo.svg",
-        extras: ["README.md": [filename: "README.md", title: "Ptolemy"]]
+        extras: [
+          "docs/v0-2_redesign.md",
+          "README.md": [filename: "README.md", title: "Ptolemy"]
+        ]
       ]
     ]
   end
@@ -25,6 +29,10 @@ defmodule Ptolemy.MixProject do
     [
       extra_applications: [:logger]
     ]
+  end
+
+  defp description() do
+    "Vault + Elixir"
   end
 
   # Run "mix help deps" to learn about dependencies.
@@ -38,11 +46,6 @@ defmodule Ptolemy.MixProject do
       {:ex_doc, "~> 0.19", only: :dev, runtime: false}
     ]
   end
-
-  defp description() do
-    "Vault + Elixir"
-  end
-
 
   defp package() do
     [

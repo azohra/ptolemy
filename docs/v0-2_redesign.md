@@ -1,6 +1,9 @@
-# Ptolemy <small>- Elixir Application Secret Management</small>
+# Ptolemy v0.2 Design Doc
+> ~~This document is designed to facilitate and grow with design discussions and is not yet complete.~~ This document has been finalized as the
+> basis of Ptolemy v0.2. All content here may not be 100% accurate in the APIs due to possible implementation complications, but will be very
+> close and give an idea as to what the goals and final state of the rewrite will look like.
 
-> This document is designed to facilitate and grow with design discussions and is not yet complete
+## Intro
 
 Ptolemy is now at a current stage where our thinking goes beyond the simple accessing and updating of secrets stored in a Vault server. For the idea of Application Managed secrets to fully be an accepted practice in the Elixir community, an effective and elegant solution will need to be built. We hope Ptolemy can fill this void. We envisioned Ptolemy to also provide capability of loading the secrets into your application environment and updating the secrets according to their ttl.
 
@@ -46,10 +49,10 @@ config :ptolemy, Ptolemy,
 
 # define :secret_1 to be provided by :server1 from the secret found on "SECRET_PATH"
 condif :ptolemy, env: [
-  {:app_name, :secret_1, {:server1, "SECRET_PATH"}},
+  {{:app_name, :secret_1}, {:server1, "SECRET_PATH"}},
 
   # Future extensions to third-party providers can also be supported:
-  {:app_name, :another_secret, {ThirdParty.Provider, "any_kind_of_args"}}
+  {{:app_name, :another_secret}, {ThirdParty.Provider, "any_kind_of_args"}}
 
   # Note that the args passed to servers or providers can be of any type
 ]
@@ -118,13 +121,10 @@ Ptolemy/
 │   │   |   └── gcp.ex
 │   │   └── ...
 │   ├── providers
-│   │   ├── provider.ex
 │   │   ├── vault_provider.ex
 │   │   └── ...
-│   ├── loaders
-│   │   ├── loader.ex
-│   │   └── vault_loader.ex
-│   │   └── ...
+│   ├── provider.ex
+│   ├── loader.ex
 │   ├── ptolemy.ex
 │   ├── ptolemy_server.ex
 │   └── ...
