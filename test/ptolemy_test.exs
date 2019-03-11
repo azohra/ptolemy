@@ -3,6 +3,6 @@ defmodule PtolemyTest do
   doctest Ptolemy
 
   test "greets the world" do
-    assert Ptolemy.hello() == :world
+    assert 1 + 1 == 2
   end
 end

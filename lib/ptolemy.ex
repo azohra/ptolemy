@@ -119,7 +119,7 @@ defmodule Ptolemy do
 
   ## Example
   ```elixir
-  iex(2)> Ptolemy.create(server, :kv_engine1, ["secret/data/new",%{Hello: "World"}])
+  iex(1)> Ptolemy.create(server, :kv_engine1, ["secret/data/new",%{Hello: "World"}])
   :ok 
   ```
 
@@ -175,7 +175,7 @@ defmodule Ptolemy do
 
   ## Example
   ```elixir
-  iex(2)> Ptolemy.update(server, :kv_engine1, [:ptolemy, %{test: "bar"}])
+  iex(3)> Ptolemy.update(server, :kv_engine1, [:ptolemy, %{test: "bar"}])
   :ok
   ```
   """
@@ -204,7 +204,7 @@ defmodule Ptolemy do
 
   ## Example
   ```elixir
-  iex(2)> Ptolemy.delete(server, :kv_engine1, [:ptolemy, [1]])
+  iex(4)> Ptolemy.delete(server, :kv_engine1, [:ptolemy, [1]])
   :ok
   ```
   """
