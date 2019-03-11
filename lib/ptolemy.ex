@@ -95,6 +95,13 @@ defmodule Ptolemy do
   alias Ptolemy.Engines.KV
   @doc """
   Entrypoint of ptolemy, this will start the process and store all necessary state for a connection to a remote vault server.
+  Please make sure the configuration for `server` exists in your confi file
+
+  ## Example
+  ```elixir
+  iex(2)> {:ok, server} = Ptolemy.start(:production, :server1)
+  {:ok, #PID<0.228.0>} 
+  ```
   """
   @spec start(atom, atom) :: {:ok, pid} | {:error, String.t()}
   def start(name, config) do
@@ -102,14 +109,20 @@ defmodule Ptolemy do
   end
 
   @doc """
-  create secrets
+  create secrets in Vault, but it is not responsible for adding these secrets into the application configuration.
   opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
   
   :kv_engine
     1. secret (Required, path of the secret)
     2. payload (Required, content of the secret)
     3. cas (Optional, default: nil)
-  
+
+  ## Example
+  ```elixir
+  iex(2)> Ptolemy.create(server, :kv_engine1, ["secret/data/new",%{Hello: "World"}])
+  :ok 
+  ```
+
   :gcp_engine
   """
   @spec create(pid, atom, [any]) :: :ok | :error  | {:error, any}
@@ -130,10 +143,14 @@ defmodule Ptolemy do
 
   :kv_engine
     1. secret (Required)
-    2. silent (Optional, default: false)
+    2. silent (Optional, default: false), use silent option if you want the data ONLY
     3. version (Optional, default: 0)
   
-    use silent option if you only want the data
+  ## Example
+  ```elixir
+  iex(2)> Ptolemy.read(server, :kv_engine1, [:ptolemy, true])
+  {:ok, %{"test" => "foo"}}
+  ```
   """
   @spec read(pid, atom, [any]) :: {:ok, any} | :error | {:error, any}
   def read(pid, engine_name, opts \\ []) do
@@ -155,6 +172,12 @@ defmodule Ptolemy do
     1. secret (Required)
     2. payload (Required)
     3. cas (Optional, default: nil)
+
+  ## Example
+  ```elixir
+  iex(2)> Ptolemy.update(server, :kv_engine1, [:ptolemy, %{test: "bar"}])
+  :ok
+  ```
   """
   @spec update(pid, atom, [any]) :: :ok | :error  | {:error, any}
   def update(pid, engine_name, opts \\ []) do
@@ -178,6 +201,12 @@ defmodule Ptolemy do
     3. destroy (Optional, default: false)
     
     destroy will leave no trace of the secret
+
+  ## Example
+  ```elixir
+  iex(2)> Ptolemy.delete(server, :kv_engine1, [:ptolemy, [1]])
+  :ok
+  ```
   """
   @spec delete(pid, atom, [any]) :: :ok | :error  | {:error, any}
   def delete(pid, engine_name, opts \\ []) do
