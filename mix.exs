@@ -9,6 +9,7 @@ defmodule Ptolemy.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: package(),
+      description: description(),
       name: "Ptolemy",
       source_url: "https://github.com/azohra/ptolemy",
       docs: [
@@ -47,6 +48,7 @@ defmodule Ptolemy.MixProject do
     [
       name: "ptolemy",
       licenses: ["MIT"],
+      maintainers: ["Brandon Sam Soon", "Frank Vumbaca", "Kevin Hu"],
       links: %{"GitHub" => "https://github.com/azohra/ptolemy"}
     ]
   end
