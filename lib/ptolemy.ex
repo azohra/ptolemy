@@ -113,23 +113,23 @@ defmodule Ptolemy do
   opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
   
   :kv_engine
-    1. secret (Required, path of the secret)
-    2. payload (Required, content of the secret)
+    1. secret (Required)
+    2. payload (Required)
     3. cas (Optional, default: nil)
 
   ## Example
   ```elixir
-  iex(1)> Ptolemy.create(server, :kv_engine1, ["secret/data/new",%{Hello: "World"}])
+  iex(1)> Ptolemy.create(server, :kv_engine1, [:ptolemy, %{test: "foo"}])
   :ok 
   ```
-
+  
   :gcp_engine
   """
   @spec create(pid, atom, [any]) :: :ok | :error  | {:error, any}
   def create(pid, engine_name, opts \\ []) do
     case get_engine_type(pid, engine_name) do
       :kv_engine -> 
-        Kernel.apply(KV, :kv_create!, [pid | opts])
+        Kernel.apply(KV, :kv_ccreate!, [pid, engine_name] ++ opts)
       :gcp_engine -> 
         Logger.info("Not implemented yet")
         {:error, "GCP is not implemented yet"}

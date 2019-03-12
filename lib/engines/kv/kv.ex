@@ -123,6 +123,20 @@ defmodule Ptolemy.Engines.KV do
     kv_create!(pid, secret, payload, cas)
   end
 
+
+  @doc """
+  Creates a secret according to the path specified in the ":kv_engine" specification
+  
+  ## Example
+  ```
+  iex(2)> Ptolemy.kv_ccreate!(:production, :engine1, :ptolemy, %{test: "asda"}, 1)
+  ```
+  """
+  def kv_ccreate!(pid, engine_name, secret, payload, cas \\ nil) do
+    path = get_kv_path!(pid, engine_name, secret, "data")
+    kv_create!(pid, path, payload, cas)
+  end
+
   @doc """
   Creates a new secret via a KV engine
 
