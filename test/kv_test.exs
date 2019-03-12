@@ -38,7 +38,7 @@ defmodule KVTest do
 
   test "create secret" do
     {:ok, server} = Ptolemy.start(:production, :server1)
-    assert true
+    assert :ok === Ptolemy.create(server, :kv_engine1, ["secret/data/test1",%{Hello: "World"}])
   end
 
   test "read secret" do
