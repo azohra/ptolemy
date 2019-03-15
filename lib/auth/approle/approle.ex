@@ -5,7 +5,7 @@ defmodule Ptolemy.Auth.Approle do
   @behaviour Ptolemy.Auth
 
   def authenticate(url, %{secret_id: _sid, role_id: _rid} = creds, opt) do
-    Ptolemy.Auth.vault_auth_client(url, opt) 
+    Ptolemy.Auth.vault_auth_client(url, opt)
     |> Ptolemy.Auth.login("/auth/approle/login", creds)
   end
 end
