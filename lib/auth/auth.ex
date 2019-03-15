@@ -117,9 +117,7 @@ defmodule Ptolemy.Auth do
           vault_auth_data
           | %{vault: vault_auth_data, iap: iap_auth_data}
           | {:error, String.t()}
-  def authenticate(method, url, credentials, opts)
 
-  # IAP not defined or not enabled
   def authenticate(method, url, credentials, [] = opts) do
     auth(method, url, credentials, opts)
   end
