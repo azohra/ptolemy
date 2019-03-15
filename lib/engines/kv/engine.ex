@@ -1,4 +1,4 @@
-defmodule Ptolemy.Engines.KV do
+defmodule Ptolemy.Engines.KV.Engine do
   @moduledoc """
   `Ptolemy.Engines.KV` provides interaction with a Vault server's Key Value V2 secret egnine.
   """
@@ -39,6 +39,8 @@ defmodule Ptolemy.Engines.KV do
 
   @doc """
   Deletes a specific set of version(s) belonging to a specific secret
+
+  If a 403 response is received, please check your ACL policy on vault
   """
   def delete!(client, path, vers) do
     payload = %{versions: vers}
@@ -57,6 +59,8 @@ defmodule Ptolemy.Engines.KV do
 
   @doc """
   Destroys a specific set of version(s) belonging to a specific secret.
+  
+  If a 403 response is received, please check your ACL policy on vault
   """
   def destroy!(client, path, vers) do
     payload = %{versions: vers}

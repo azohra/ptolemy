@@ -3,3 +3,8 @@
 use Mix.Config
 
 config :tesla, adapter: Tesla.Adapter.Hackney
+<<<<<<< HEAD
+=======
+
+import_config "#{Mix.env()}.exs"
+>>>>>>> origin/refactor/kv-binding

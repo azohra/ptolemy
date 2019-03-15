@@ -100,7 +100,13 @@ config :ptolemy, Ptolemy,
 ## Road Map
 
 1. Restructure Ptolemy to support genric engines
+<<<<<<< HEAD
 2. Add engine support for
+=======
+2. Load secrets into application according to config file
+3. Improve performance of Vault fetch operations 
+4. Add engine support for
+>>>>>>> origin/refactor/kv-binding
   - Key/Value V2 (Done)
     - The kv secret engine is used to store versioned key value pair secrets. Of course, you may use it as non-versioned if you wish. Our implementation contains a full set of operations to manipulate secrets. This engine is mostly done, thanks to @brsmsn
   - GCP (WIP)
@@ -115,6 +121,7 @@ config :ptolemy, Ptolemy,
     - The database secrets engine generates database credentials dynamically based on configured roles.
   - AWS (Bonus)
     - TBD due to lack of internal demand, but AWS engine implementation will be similar to GCP engine's.
+<<<<<<< HEAD
 
 3. Feel free to tell us what features do you want with Ptolemy by opening an issue
 
@@ -231,3 +238,8 @@ defmodule Ptolemy do
   end
 end
 ```
+=======
+5. Feel free to tell us what features do you want with Ptolemy by opening an issue
+
+Please find more details regarding our redesign in `docs/README.md`
+>>>>>>> origin/refactor/kv-binding

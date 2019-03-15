@@ -42,6 +42,7 @@ defmodule Ptolemy do
       production: %{
         vault_url: "http://localhost:8200",
         auth_mode: "approle",
+<<<<<<< HEAD
         kv_engine: %{
           kv_engine1: %{
             engine_path: "secret/",
@@ -49,6 +50,17 @@ defmodule Ptolemy do
               ptolemy: "/ptolemy"
             }
           }
+=======
+        kv_engine1: %{
+          engine_type: :kv_engine,
+          engine_path: "secret/",
+          secrets: %{
+            ptolemy: "/ptolemy"
+          },
+          app_map: [
+            var1: "test"
+        ]
+>>>>>>> origin/refactor/kv-binding
         },
         credentials: %{
           role_id: System.get_env("ROLE_ID"),
@@ -66,6 +78,7 @@ defmodule Ptolemy do
       production: %{
         vault_url: "http://localhost:8200",
         auth_mode: "GCP",
+<<<<<<< HEAD
         kv_engine: %{
           kv_engine1: %{
             engine_path: "secret/",
@@ -74,6 +87,18 @@ defmodule Ptolemy do
             }
           }
         },
+=======
+        kv_engine1: %{
+          engine_type: :kv_engine,
+          engine_path: "secret/",
+          secrets: %{
+            ptolemy: "/ptolemy"
+          },
+          app_map: [
+          var1: "test"
+          ]
+        }
+>>>>>>> origin/refactor/kv-binding
         credentials: %{
           svc_acc: System.get_env("GOOGLE_SVC_ACC"),
           target_audience: System.get_env("TARGET_AUD") #Not required if :iap_on is false
@@ -85,6 +110,7 @@ defmodule Ptolemy do
       }
     ```
   """
+<<<<<<< HEAD
   alias Ptolemy.Server
   alias Ptolemy.Engines.KV
 
@@ -127,10 +153,57 @@ defmodule Ptolemy do
       {:ok, values}
     else
       :error -> {:error, "Could not find: #{key} in the remote vault server"}
+=======
+  require Logger
+
+  alias Ptolemy.Server
+  alias Ptolemy.Engines.KV
+  @doc """
+  Entrypoint of ptolemy, this will start the process and store all necessary state for a connection to a remote vault server.
+  Please make sure the configuration for `server` exists in your confi file
+
+  ## Example
+  ```elixir
+  iex(2)> {:ok, server} = Ptolemy.start(:production, :server1)
+  {:ok, #PID<0.228.0>} 
+  ```
+  """
+  @spec start(atom, atom) :: {:ok, pid} | {:error, String.t()}
+  def start(name, config) do
+    Server.start_link(name, config)
+  end
+
+  @doc """
+  create secrets in Vault, but it is not responsible for adding these secrets into the application configuration.
+  opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
+  
+  :kv_engine
+    1. secret (Required)
+    2. payload (Required)
+    3. cas (Optional, default: nil)
+
+  ## Example
+  ```elixir
+  iex(1)> Ptolemy.create(server, :kv_engine1, [:ptolemy, %{test: "foo"}])
+  :ok 
+  ```
+  
+  :gcp_engine
+  """
+  @spec create(pid, atom, [any]) :: :ok | :error  | {:error, any}
+  def create(pid, engine_name, opts \\ []) do
+    case get_engine_type(pid, engine_name) do
+      :kv_engine -> 
+        Kernel.apply(KV, :kv_ccreate!, [pid, engine_name] ++ opts)
+      :gcp_engine -> 
+        Logger.info("Not implemented yet")
+        {:error, "GCP is not implemented yet"}
+>>>>>>> origin/refactor/kv-binding
     end
   end
 
   @doc """
+<<<<<<< HEAD
   Fetches all of a secret's keys and value via the `:kv_engine` configuration.
   
   See `kv_fetch!/2` for the description of the silent and version options.
@@ -177,10 +250,36 @@ defmodule Ptolemy do
         |> Map.get("data")
       false ->
         resp
+=======
+  read all secrets from vault path
+  
+  opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
+
+  :kv_engine
+    1. secret (Required)
+    2. silent (Optional, default: false), use silent option if you want the data ONLY
+    3. version (Optional, default: 0)
+  
+  ## Example
+  ```elixir
+  iex(2)> Ptolemy.read(server, :kv_engine1, [:ptolemy, true])
+  {:ok, %{"test" => "foo"}}
+  ```
+  """
+  @spec read(pid, atom, [any]) :: {:ok, any} | :error | {:error, any}
+  def read(pid, engine_name, opts \\ []) do
+    case get_engine_type(pid, engine_name) do
+      :kv_engine -> 
+        Kernel.apply(KV, :kv_cfetch!, [pid, engine_name] ++ opts)
+      :gcp_engine -> 
+        Logger.info("Not implemented yet")
+        {:error, "Not implemented"}
+>>>>>>> origin/refactor/kv-binding
     end
   end
 
   @doc """
+<<<<<<< HEAD
   Updates an already existing secret via the `:kv_engine` configuration.
 
   ## Example
@@ -314,4 +413,75 @@ defmodule Ptolemy do
     "/#{engine_path}#{operation}#{secret_path}"
   end
 
+=======
+  Updates a secret
+  
+  opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
+
+  :kv_engine
+    1. secret (Required)
+    2. payload (Required)
+    3. cas (Optional, default: nil)
+
+  ## Example
+  ```elixir
+  iex(3)> Ptolemy.update(server, :kv_engine1, [:ptolemy, %{test: "bar"}])
+  :ok
+  ```
+  """
+  @spec update(pid, atom, [any]) :: :ok | :error  | {:error, any}
+  def update(pid, engine_name, opts \\ []) do
+    case get_engine_type(pid, engine_name) do
+      :kv_engine -> 
+        Kernel.apply(KV, :kv_cupdate!, [pid, engine_name] ++ opts)
+      :gcp_engine -> 
+        Logger.info("Not implemented yet")
+        {:error, "Not implemented"}
+      end
+  end
+
+  @doc """
+  Delete a secret
+  
+  opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
+
+  :kv_engine
+    1. secret (Required)
+    2. vers (Required)
+    3. destroy (Optional, default: false)
+    
+    destroy will leave no trace of the secret
+
+  ## Example
+  ```elixir
+  iex(4)> Ptolemy.delete(server, :kv_engine1, [:ptolemy, [1]])
+  :ok
+  ```
+  """
+  @spec delete(pid, atom, [any]) :: :ok | :error  | {:error, any}
+  def delete(pid, engine_name, opts \\ []) do
+    case get_engine_type(pid, engine_name) do
+      :kv_engine -> 
+          Kernel.apply(KV, :kv_cdelete!, [pid, engine_name] ++ opts)
+
+      :gcp_engine -> 
+        Logger.info("Not implemented yet")
+        {:error, "Not implemented"}
+    end
+  end
+
+  @doc """
+  Helper function used to determine what type does the engine correspond to
+  """
+  defp get_engine_type(pid, engine_name) do
+    with {:ok, engine_conf} <- Server.get_data(pid, engine_name),
+      {:ok, engine_type} <- Map.fetch(engine_conf, :engine_type)
+    do
+      engine_type
+    else
+      {:error, "Not found!"} -> throw "#{pid} does not have a engine config for #{engine_name}"
+      {:error} -> throw "Could not find :engine_type in engine_conf"
+    end
+  end
+>>>>>>> origin/refactor/kv-binding
 end
