@@ -18,7 +18,8 @@ defmodule Ptolemy.Auth.Google do
   @doc """
   Generates a google API access token used to authenticate your request to google's api.
   """
-  @spec authenticate(:api, map(), String.t(), pos_integer()) :: {String.t(), String.t()} | {:error, String.t()}
+  @spec authenticate(:api, map(), String.t(), pos_integer()) ::
+          {String.t(), String.t()} | {:error, String.t()}
   def authenticate(:api, creds, exp) do
     base = %{scope: @google_gcp_scope}
     gen_tok(creds, "access_token", base, exp)
@@ -27,7 +28,8 @@ defmodule Ptolemy.Auth.Google do
   @doc """
   Generates an IAP access token used to authenticate through IAP secured resource.
   """
-  @spec authenticate(:iap, map(), String.t(), pos_integer()) :: {String.t(), String.t()} | {:error, String.t()}
+  @spec authenticate(:iap, map(), String.t(), pos_integer()) ::
+          {String.t(), String.t()} | {:error, String.t()}
   def authenticate(:iap, creds, client_id, exp) do
     base = %{target_audience: client_id}
     gen_tok(creds, "id_token", base, exp)
@@ -49,33 +51,35 @@ defmodule Ptolemy.Auth.Google do
 
     client = iam_auth_client(api_token)
 
-    with {:ok, resp} <- Tesla.post(client, "/v1/projects/#{project}/serviceAccounts/#{sub}:signJwt", payload) do
+    with {:ok, resp} <-
+           Tesla.post(client, "/v1/projects/#{project}/serviceAccounts/#{sub}:signJwt", payload) do
       case {resp.status, resp.body} do
         {status, body} when status in 200..299 ->
           body
           |> Map.fetch!("signedJwt")
 
-        {status, body} ->
-          message = Map.fetch!(body, "error") |>  Map.fetch!("message")
+        {_status, body} ->
+          message = Map.fetch!(body, "error") |> Map.fetch!("message")
           {:error, "Signing failed, #{message}"}
-        end
+      end
     end
   end
 
-  #Creates google specific JWT
+  # Creates google specific JWT
   defp create_jwt(svc, base_claim, time) do
     iss = svc["client_email"]
-    signer = svc["private_key"] |> JOSE.JWK.from_pem()|> rs256()
+    signer = svc["private_key"] |> JOSE.JWK.from_pem() |> rs256()
 
     token()
-      |> with_header_args(@google_jwt_header)
-      |> with_claim_generator("exp", fn -> :os.system_time(:seconds) + time end ) #need to overide the overide (T.T) +/- cpu offset
-      |> with_claims(base_claim)
-      |> with_aud(@google_aud)
-      |> with_iss(iss)
-      |> with_signer(signer)
-      |> sign()
-      |> get_compact()
+    |> with_header_args(@google_jwt_header)
+    # need to overide the overide (T.T) +/- cpu offset
+    |> with_claim_generator("exp", fn -> :os.system_time(:seconds) + time end)
+    |> with_claims(base_claim)
+    |> with_aud(@google_aud)
+    |> with_iss(iss)
+    |> with_signer(signer)
+    |> sign()
+    |> get_compact()
   end
 
   # Helper func to generate a signed jwt used to submit to google's api.
@@ -85,9 +89,9 @@ defmodule Ptolemy.Auth.Google do
       |> create_jwt(base_claim, exp)
       |> req_tokens()
 
-    case resp do      
+    case resp do
       {:error, msg} -> {:error, msg}
-      _ ->  {"Authorization", "Bearer #{Map.fetch!(resp,key)}"}
+      _ -> {"Authorization", "Bearer #{Map.fetch!(resp, key)}"}
     end
   end
 
@@ -107,32 +111,34 @@ defmodule Ptolemy.Auth.Google do
         {status, body} when status in 200..299 ->
           body
 
-        {status, body} ->
-          message = body |>  Map.fetch!("error_description")
+        {_status, body} ->
+          message = body |> Map.fetch!("error_description")
           {:error, "Token request failed: #{message}"}
-        end
+      end
     end
   end
 
-  #Create client used to authenticate against the oauth2 api.
+  # Create client used to authenticate against the oauth2 api.
   defp auth_client do
     Tesla.client([
       {Tesla.Middleware.BaseUrl, @google_auth_url},
-      {Tesla.Middleware.Headers, [
-        {"Content-Type", "application/json; charset=utf-8"}
-      ]},
+      {Tesla.Middleware.Headers,
+       [
+         {"Content-Type", "application/json; charset=utf-8"}
+       ]},
       {Tesla.Middleware.JSON, []}
     ])
   end
 
-  #Create client used to authenticate through the iam api
+  # Create client used to authenticate through the iam api
   defp iam_auth_client(api_tok) do
     Tesla.client([
       {Tesla.Middleware.BaseUrl, @google_iam_auth},
-      {Tesla.Middleware.Headers, [
-        api_tok,
-        {"Content-Type", "application/json; charset=utf-8"}
-      ]},
+      {Tesla.Middleware.Headers,
+       [
+         api_tok,
+         {"Content-Type", "application/json; charset=utf-8"}
+       ]},
       {Tesla.Middleware.JSON, []}
     ])
   end

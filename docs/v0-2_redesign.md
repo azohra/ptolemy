@@ -184,4 +184,3 @@ defmodule Ptolemy do
   end
 end
 ```
-

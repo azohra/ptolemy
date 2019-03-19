@@ -4,7 +4,7 @@ defmodule Ptolemy.MixProject do
   def project do
     [
       app: :ptolemy,
-      version: "0.1.0",
+      version: "0.2.0",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -17,8 +17,8 @@ defmodule Ptolemy.MixProject do
         main: "README.md",
         logo: "assets/logo.svg",
         extras: [
-          "docs/v0-2_redesign.md",
-          "README.md": [filename: "README.md", title: "Ptolemy"]
+          "README.md": [filename: "README.md", title: "Ptolemy"],
+          "docs/v0-2_redesign.md": [filename: "v0-2_redesign.md", title: "v0.2 Docs Design"]
         ]
       ]
     ]
@@ -31,10 +31,6 @@ defmodule Ptolemy.MixProject do
     ]
   end
 
-  defp description() do
-    "Vault + Elixir"
-  end
-
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
@@ -45,6 +41,10 @@ defmodule Ptolemy.MixProject do
       {:poison, "~> 3.1"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false}
     ]
+  end
+
+  defp description() do
+    "Application Environment Manager"
   end
 
   defp package() do
