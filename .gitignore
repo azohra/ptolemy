@@ -33,3 +33,5 @@ ptolemy-*.tar
 ### VisualStudioCode Patch ###
 # Ignore all local history of files
 .history
+
+.elixir_ls/
