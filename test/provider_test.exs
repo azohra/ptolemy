@@ -11,7 +11,7 @@ defmodule Ptolemy.ProviderTest do
 
   test "register_ttl will regester the ttl properly" do
     Ptolemy.ProviderTest.TestProvider.register_ttl(self(), "test_query", 1, :milliseconds)
-    assert_receive({:expired, {Ptolemy.ProviderTest.TestProvider, "test_query"}}, 2)
+    assert_receive({:expired, {Ptolemy.ProviderTest.TestProvider, "test_query"}}, 10)
   end
 
   describe "ttl conversions:" do
