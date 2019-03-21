@@ -45,14 +45,14 @@ defmodule Ptolemy.Engines.GCP.Engine do
   end
 
   @doc """
-  Submits a POST request to retrieve the configuration of a given roleset.
+  Submits a POST request to rotate a roleset account's email and Key ID
   """
   @spec rotate_roleset(Tesla.Client.t(), String.t()) :: {:ok | :error, String.t() | atom()}
   def rotate_roleset(client, roleset_name) do
     with {:ok, resp} <- Tesla.post(client, "/roleset/#{roleset_name}/rotate", %{}) do
       case {resp.status, resp.body} do
-        {status, body} when status in 200..299 ->
-          {:ok, body}
+        {status, _body} when status in 200..299 ->
+          {:ok, "Rotated"}
 
         {status, body} ->
           message = Map.fetch!(body, "errors")
@@ -61,12 +61,16 @@ defmodule Ptolemy.Engines.GCP.Engine do
     end
   end
 
+  @doc """
+  Submits a POST request to rotate a roleset account's Key ID. Only works on
+  `access_token` type rolesets.
+  """
   @spec rotate_roleset_key(Tesla.Client.t(), String.t()) :: {:ok | :error, String.t() | atom()}
   def rotate_roleset_key(client, roleset_name) do
     with {:ok, resp} <- Tesla.post(client, "/roleset/#{roleset_name}/rotate-key", %{}) do
       case {resp.status, resp.body} do
-        {status, body} when status in 200..299 ->
-          {:ok, body}
+        {status, _body} when status in 200..299 ->
+          {:ok, "Rotated"}
 
         {status, body} ->
           message = Map.fetch!(body, "errors")
@@ -76,7 +80,7 @@ defmodule Ptolemy.Engines.GCP.Engine do
   end
 
   @doc """
-  Submits a GET request to retrieve a temporary Oauth2 from an `access_token` roleset.
+  Submits a GET request to retrieve a temporary Oauth2 token from an `access_token` roleset.
   """
   @spec gen_token(Tesla.Client.t(), String.t()) :: {:ok, map()} | {:error, String.t() | atom()}
   def gen_token(client, roleset_name) do
@@ -95,7 +99,7 @@ defmodule Ptolemy.Engines.GCP.Engine do
   end
 
   @doc """
-  Submits a GET request to retrieve a temporary token from an `access_token` roleset.
+  Submits a GET request to retrieve a service account key from a `service_account_key` roleset.
   """
   @spec gen_key(Tesla.Client.t(), String.t()) :: {:ok, map()} | {:error, String.t() | atom()}
   def gen_key(client, roleset_name) do
