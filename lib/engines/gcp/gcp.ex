@@ -195,7 +195,7 @@ defmodule Ptolemy.Engines.GCP do
   ## Example
   ```elixir
   iex(5)> Ptolemy.Engines.GCP.delete(server, :gcp_engine, :service_account_key, "new_roleset")
-  {:ok, "Roleset implemented"}
+  {:ok, "Rotated"}
   ```
   """
   @spec delete(pid(), atom(), gcp_secret_type, String.t()) :: {:ok | :error, String.t() | atom()}
