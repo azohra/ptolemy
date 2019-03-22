@@ -102,6 +102,16 @@ defmodule Ptolemy.Engines.GCP do
   @doc """
   Creates a roleset account in the given engine from which `access token`s and
   `service account key`s can be generated.
+
+  ## Example
+  ```elixir
+  iex(1)> Ptolemy.Engines.GCP.create(server, :gcp_engine, "roleset_name", %{
+    bindings: "resource \"//cloudresourcemanager.googleapis.com/projects/project-name\" {roles = [\"roles/viewer\"]}",
+    project: "project-name",
+    secret_type: "service_account_key"
+  })
+  {:ok, "Roleset implemented"}
+  ```
   """
   @spec create(pid(), atom(), String.t(), roleset) :: {:ok | :error, String.t() | atom()}
   def create(pid, engine_name, roleset_name, roleset_payload) do
@@ -111,6 +121,23 @@ defmodule Ptolemy.Engines.GCP do
 
   @doc """
   Generates an `access token`/`service account key` from the given roleset
+
+  ## Example
+  ```elixir
+  iex(2)> Ptolemy.Engines.GCP.read(server, :gcp_engine, :service_account_key, "roleset_name")
+  {:ok, %{
+    "key_algorithm" => "KEY_ALG_RSA_2048"
+    "key_type" => "TYPE_GOOGLE_CREDENTIALS_FILE",
+    "private_key_data" => "shhhh....."
+  }}
+
+  iex(3)> Ptolemy.Engines.GCP.read(server, :gcp_engine, :access_token, "access_roleset")
+  {:ok, %{
+    "expires_at_seconds" => 1553274174,
+    "token" => "shhhh.....",
+    "token_ttl" => 3599
+  }}
+  ```
   """
   @spec read(pid(), atom(), gcp_secret_type, String.t()) :: {:ok, map()} | {:error, String.t()}
   def read(pid, engine_name, secret_type, roleset_name) do
@@ -131,6 +158,16 @@ defmodule Ptolemy.Engines.GCP do
   If you are unsure of a roleset's configuration, it is recommended that you use the
   function `read_roleset!/3`, update the resulting map, and then call `update` with the
   new map to ensure that you are modifying only the editable attributes.
+
+  ## Example
+  ```elixir
+  iex(4)> Ptolemy.Engines.GCP.update(server, :gcp_engine, "roleset_name", %{
+    bindings: "resource \"//cloudresourcemanager.googleapis.com/projects/project-name\" {roles = [\"roles/editor\"]}",
+    project: "project-name",
+    secret_type: "service_account_key"
+  })
+  {:ok, "Roleset implemented"}
+  ```
   """
   @spec update(pid(), atom(), String.t(), roleset) :: {:ok | :error, String.t() | atom()}
   def update(pid, engine_name, roleset_name, roleset_payload) do
@@ -138,7 +175,10 @@ defmodule Ptolemy.Engines.GCP do
   end
 
   @doc """
+  <<<<<<< HEAD
 
+  =======
+  >>>>>>> example docs
   The Vault Google Secret Engine API offers multiple endpoints for rotating roleset accounts to
   invalidate previously generated secrets. There are two methods:
 
@@ -151,6 +191,12 @@ defmodule Ptolemy.Engines.GCP do
     * This method is works for both `gcp_secret_type`s and is triggered by calling this function with `:service_account_key`
     * This method will replace the KeyID AND the email that the roleset account uses to generate secrets
     * Based on testing, this method immediately invalidates previously generated secrets
+
+  ## Example
+  ```elixir
+  iex(5)> Ptolemy.Engines.GCP.delete(server, :gcp_engine, :service_account_key, "new_roleset")
+  {:ok, "Roleset implemented"}
+  ```
   """
   @spec delete(pid(), atom(), gcp_secret_type, String.t()) :: {:ok | :error, String.t() | atom()}
   def delete(pid, engine_name, secret_type, roleset_name) do
@@ -167,7 +213,8 @@ defmodule Ptolemy.Engines.GCP do
   Creates a Tesla Client whose base URL refers to the given GCP engine.
   The GCP Engine requires this client to make API calls to the correct engine
   """
-  @spec create_client(pid, atom) :: map
+
+  @spec create_client(pid(), atom() | String.t()) :: Tesla.Client.t()
   def create_client(pid, engine_name) do
     creds = Server.fetch_credentials(pid)
     {:ok, url} = Server.get_data(pid, :vault_url)
@@ -175,7 +222,7 @@ defmodule Ptolemy.Engines.GCP do
 
     engine_path =
       engines
-      |> Map.fetch!(engine_name)
+      |> Keyword.fetch!(engine_name)
       |> Map.fetch!(:path)
 
     adapter =
