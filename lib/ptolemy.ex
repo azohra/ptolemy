@@ -173,10 +173,9 @@ defmodule Ptolemy do
   ```
   """
   @spec read(pid, atom, [any]) :: :ok | {:ok, any()} | {:error, any()}
-  def read(pid, engine_name, opts \\ [], access_keys \\ []) do
+  def read(pid, engine_name, opts \\ []) do
     Module.concat(Ptolemy.Engines, get_engine_type!(pid, engine_name))
     |> apply(:read, [pid, engine_name | opts])
-    |> custom_get_in(access_keys)
   end
 
   @doc """
@@ -291,13 +290,5 @@ defmodule Ptolemy do
       {:error, "Not found!"} -> raise "#{pid} does not have a engine config for #{engine_name}"
       {:error} -> raise "Could not find :engine_type in engine_conf"
     end
-  end
-
-  defp custom_get_in(data, [] = _key_list) do
-    data
-  end
-
-  defp custom_get_in(data, key_list) do
-    get_in(data, key_list)
   end
 end
