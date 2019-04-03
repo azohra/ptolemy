@@ -66,7 +66,6 @@ defmodule Ptolemy do
   require Logger
 
   alias Ptolemy.Server
-  alias Ptolemy.Engines.KV
 
   @doc """
   Entrypoint of ptolemy, this will start the process and store all necessary state for a connection to a remote vault server.
@@ -87,7 +86,7 @@ defmodule Ptolemy do
   create secrets in Vault, but it is not responsible for adding these secrets into the application configuration.
   opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
 
-  :kv_engine
+  KV Engine
     1. secret (Required)
     2. payload (Required)
     3. cas (Optional, default: nil)
@@ -98,7 +97,19 @@ defmodule Ptolemy do
   :ok
   ```
 
-  :gcp_engine
+  GCP Engine
+    1. roleset name (Required)
+    2. roleset configuration payload(Required)
+
+  ## Example
+  ```elixir
+  iex(1)> Ptolemy.create(server, :gcp_engine1, ["roleset_name", %{
+    bindings: "bindings",
+    project: "project-name",
+    secret_type: "service_account_key"
+  }])
+  {:ok, "Roleset implemented"}
+  ```
   """
   @spec create(pid, atom, [any]) :: :ok | {:ok, any()} | {:error, any()}
   def create(pid, engine_name, opts \\ []) do
@@ -113,7 +124,7 @@ defmodule Ptolemy do
 
   opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
 
-  :kv_engine
+  KV Engine
     1. secret (Required)
     2. silent (Optional, default: false), use silent option if you want the data ONLY
     3. version (Optional, default: 0)
@@ -122,6 +133,20 @@ defmodule Ptolemy do
   ```elixir
   iex(2)> Ptolemy.read(server, :kv_engine1, [:ptolemy, true])
   {:ok, %{"test" => "foo"}}
+  ```
+
+  GCP Engine
+    1. gcp secret type (Required)
+    2. roleset name (Required)
+
+  ## Example
+  ```elixir
+  iex(2)> Ptolemy.read(server, :gcp_engine1, [:service_account_key, "roleset_name"])
+  {:ok, %{
+    token: "shhh...",
+    expires_at_seconds: 1537400046,
+    token_ttl: 3599
+    }}
   ```
   """
   @spec read(pid, atom, [any]) :: :ok | {:ok, any()} | {:error, any()}
@@ -136,7 +161,7 @@ defmodule Ptolemy do
 
   opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
 
-  :kv_engine
+  KV Engine
     1. secret (Required)
     2. payload (Required)
     3. cas (Optional, default: nil)
@@ -145,6 +170,21 @@ defmodule Ptolemy do
   ```elixir
   iex(3)> Ptolemy.update(server, :kv_engine1, [:ptolemy, %{test: "bar"}])
   :ok
+
+  GCP Engine
+    1. roleset name (Required)
+    2. roleset configuration payload (Required)
+
+  See Ptolemy.Engines.GCP documentation for restrictions on updating rolesets
+
+  ## Example
+  ```elixir
+  iex(3)> Ptolemy.update(server, :gcp_engine1, ["roleset_name", %{
+    bindings: "bindings",
+    project: "project-name",
+    secret_type: "service_account_key"
+  }])
+  {:ok, "Roleset implemented"}
   ```
   """
   @spec update(pid, atom, [any]) :: :ok | {:ok, any()} | {:error, any()}
@@ -160,7 +200,7 @@ defmodule Ptolemy do
 
   opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
 
-  :kv_engine
+  KV Engine
     1. secret (Required)
     2. vers (Required)
     3. destroy (Optional, default: false)
@@ -171,6 +211,18 @@ defmodule Ptolemy do
   ```elixir
   iex(4)> Ptolemy.delete(server, :kv_engine1, [:ptolemy, [1]])
   :ok
+  ```
+
+  GCP Engine
+    1. gcp secret type (Required)
+    2. roleset name (Required)
+
+  See Ptolemy.Engines.GCP documentation for more information regarding deleting GCP secrets
+
+  ## Example
+  ```elixir
+  iex(4)> Ptolemy.delete(server, :gcp_engine1, [:access_token, "roleset_name"])
+  {:ok, "Rotated"}
   ```
   """
   @spec delete(pid, atom, [any]) :: :ok | {:ok, any()} | {:error, any()}
@@ -195,7 +247,7 @@ defmodule Ptolemy do
     end
   end
 
-  defp custom_get_in(data, [] = key_list) do
+  defp custom_get_in(data, [] = _key_list) do
     data
   end
 
