@@ -1,9 +1,6 @@
 defmodule Ptolemy.Engines.GCP do
   @moduledoc """
   `Ptolemy.Engines.GCP` provides interaction with Vault's Google Cloud Secrets Engine.
-
-  {{:app_name, :another_secret}, {GCP.Provider, {server, engine_name, gcp_secret_type, secret_name}}}
-
   """
   alias Ptolemy.Server
   alias Ptolemy.Engines.GCP.Engine
