@@ -6,14 +6,14 @@ defmodule Ptolemy.Engines.PKI.Engine do
     @doc """
     Creates a new role in Vault
     """
-    def create_role!(client, path, payload \\ %{}) do
+    def create_role(client, path, payload \\ %{}) do
       with {:ok, resp} <- Tesla.post(client, "#{path}", payload) do
         case {resp.status, resp.body} do
-          {status, _ } when status in 200..299 ->
-            status
+          {status, _} when status in 200..299 ->
+            {:ok, "PKI role created"}
   
           {status, _ } ->
-             throw "Could not create PKI role in remote vault server. Error code: #{status}"
+            {:error, "Could not create PKI role in remote vault server. Error code: #{status}"}
         end
       end
     end
@@ -21,15 +21,15 @@ defmodule Ptolemy.Engines.PKI.Engine do
     @doc """
     Reads a secret from a remote vault server using Vault's KV engine.
     """
-    def generate_secret!(client, path, common_name, payload \\ %{}) do
+    def generate_secret(client, path, common_name, payload \\ %{}) do
         payload = Map.put(payload, "common_name", common_name)
         with {:ok, resp} <- Tesla.post(client, "#{path}", payload) do
           case {resp.status, resp.body} do
             {status, body} when status in 200..299 ->
-              body
+              {:ok, body}
     
             {status, _ } ->
-              throw "Could not generate PKI certificate from the role in remote vault server. Error code: #{status}"
+              {:error, "Could not generate PKI certificate from the role in remote vault server. Error code: #{status}"}
           end
         end
       end  
@@ -39,15 +39,15 @@ defmodule Ptolemy.Engines.PKI.Engine do
   
     If a 403 response is received, please check your ACL policy on vault
     """
-    def revoke_cert!(client, path, serial_number, payload \\ %{}) do
+    def revoke_cert(client, path, serial_number, payload \\ %{}) do
         payload = Map.put(payload, "serial_number", serial_number)
         with {:ok, resp} <- Tesla.post(client, "#{path}", payload) do
           case {resp.status, resp.body} do
-            {status, body} when status in 200..299 ->
-              status
+            {status, _} when status in 200..299 ->
+              {:ok, "PKI certificate revoked"}
     
             {status, _ } ->
-              throw "Could not revoke PKI certificate from the remote vault server. Error code: #{status}"
+              {:error, "Could not revoke PKI certificate from the remote vault server. Error code: #{status}"}
           end
         end
       end  
@@ -55,14 +55,14 @@ defmodule Ptolemy.Engines.PKI.Engine do
     @doc """
     Revoke a role, but this does not invalidate the cert generated from the role
     """
-    def revoke_role!(client, path) do
+    def revoke_role(client, path) do
         with {:ok, resp} <- Tesla.delete(client, "#{path}") do
             case {resp.status, resp.body} do
-              {status, body} when status in 200..299 ->
-                status
+              {status, _} when status in 200..299 ->
+                {:ok, "PKI role revoked"}
       
               {status, _ } ->
-                throw "Could not delete PKI role from the role in remote vault server. Error code: #{status}"
+                {:error, "Could not revoke PKI role from the remote vault server. Error code: #{status}"}
             end
           end
     end
