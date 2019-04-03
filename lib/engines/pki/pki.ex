@@ -106,7 +106,7 @@ defmodule Ptolemy.Engines.PKI do
 
     def delete!(pid, engine_name, deleteType, arg1) do
       case delete(pid, engine_name, deleteType, arg1) do
-        {:ok, body} -> :ok
+        {:ok, _} -> :ok
         _ -> raise "Failed to delete from PKI engine"
       end
     end
