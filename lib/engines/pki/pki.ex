@@ -115,7 +115,7 @@ defmodule Ptolemy.Engines.PKI do
       
     ## Example
     ```elixir
-    iex(2)> Ptolemy.Engines.PKI.cdeleteCert!(server, :pki_engine1, serial_number)
+    iex(2)> Ptolemy.Engines.PKI.delete_cert(server, :pki_engine1, serial_number)
     ```
     """
     def delete_cert(pid, engine_name, serial_number) do
@@ -133,7 +133,7 @@ defmodule Ptolemy.Engines.PKI do
       
     ## Example
     ```elixir
-    iex(2)> Ptolemy.Engines.PKI.delete_role(server, :pki_engine1, :role1)
+    iex(2)> Ptolemy.Engines.PKI.delete_role(server, :pki_engine1, :test_role1)
     ```
     """
     def delete_role(pid, engine_name, role) do
