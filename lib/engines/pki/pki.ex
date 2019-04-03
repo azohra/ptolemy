@@ -15,21 +15,25 @@ defmodule Ptolemy.Engines.PKI do
       
     ## Example
     ```elixir
-    iex(2)> Ptolemy.Engines.PKI.ccreate!(server, :pki_engine1, :role1, %{allow_any_name: true})
+    iex(2)> Ptolemy.Engines.PKI.create(server, :pki_engine1, :role1, %{allow_any_name: true})
     ```
     """
-    def ccreate!(pid, engine_name, role, payload \\ %{}) do
+    def create(pid, engine_name, role, payload \\ %{}) do
       path = get_pki_path!(pid, engine_name, role, "roles")
-      create!(pid, path, payload)
+      path_create(pid, path, payload)
+    end
+
+    def create!(pid, engine_name, role, payload \\ %{}) do
+      case create(pid, engine_name, role, payload) do
+        {:error, msg} -> raise RuntimeError, message: msg
+        :error -> raise RuntimeError, message: "Failed to create certificate from #{role}"
+        _resp -> :ok
+      end
     end
     
-    def create!(pid, path, payload \\ %{}) do
+    def path_create(pid, path, payload \\ %{}) do
       client = create_client(pid)
-      resp = Engine.create_role!(client, path, payload)
-      case resp do
-        status when status in 200..299 -> :ok
-        _ -> :error
-      end
+      Engine.create_role(client, path, payload)
     end
     
     @doc """
@@ -37,21 +41,27 @@ defmodule Ptolemy.Engines.PKI do
       
     ## Example
     ```elixir
-    iex(2)> Ptolemy.Engines.PKI.cread!(server, :pki_engine1, :role1, "www.example.com")
+    iex(2)> Ptolemy.Engines.PKI.read(server, :pki_engine1, :role1, "www.example.com")
     ```
     """
-    def cread!(pid, engine_name, role, common_name, payload \\ %{}) do
+    def read(pid, engine_name, role, common_name, payload \\ %{}) do
       path = get_pki_path!(pid, engine_name, role, "issue")
-      read!(pid, path, common_name, payload)
+      path_read(pid, path, common_name, payload)
     end
-  
-    def read!(pid, path, common_name, payload) do
-      client = create_client(pid)
-      resp = Engine.generate_secret!(client, path, common_name, payload)
-      case resp do
-        %{} -> {:ok, resp}
-        _ -> {:error, "Certificate generation failed"}
+    
+    @doc """
+    The same as read(), except it raises an exception when error occurs like all bang functions
+    """
+    def read!(pid, engine_name, role, common_name, payload \\ %{}) do
+      case read(pid, engine_name, role, common_name, payload) do
+        {:error, msg} -> raise RuntimeError, message: msg
+        resp -> resp
       end
+    end
+
+    def path_read(pid, path, common_name, payload) do
+      client = create_client(pid)
+      Engine.generate_secret(client, path, common_name, payload)
     end
   
     @doc """
@@ -59,23 +69,46 @@ defmodule Ptolemy.Engines.PKI do
       
     ## Example
     ```elixir
-    iex(2)> Ptolemy.Engines.PKI.cupdate!(server, :pki_engine1, :role1, %{allow_any_name: false}
+    iex(2)> Ptolemy.Engines.PKI.update(server, :pki_engine1, :role1, %{allow_any_name: false}
     ```
     """
-    def cupdate!(pid, engine_name, role, payload \\ %{}) do
+    def update(pid, engine_name, role, payload \\ %{}) do
       path = get_pki_path!(pid, engine_name, role, "roles")
-      update!(pid, path, payload)
+      path_update(pid, path, payload)
     end
-  
-    def update!(pid, path, payload \\ %{}) do
-      client = create_client(pid)
-      resp = Engine.create_role!(client, path, payload)
-      case resp do
-        status when status in 200..299 -> :ok
-        _ -> :error
+
+    def update!(pid, engine_name, secret, payload \\ %{}) do
+      case update(pid, engine_name, secret, payload) do
+        {:error, msg} -> raise RuntimeError, message: msg
+        _resp -> :ok
       end
     end
   
+    def path_update(pid, path, payload \\ %{}) do
+      client = create_client(pid)
+      Engine.create_role(client, path, payload)
+    end
+    
+    @doc """
+    Either revoke a certificate or revoke a role from vault      
+    ## Example
+    ```elixir
+    iex(2)> Ptolemy.Engines.PKI.delete(server, :pki_engine1, :certificate, serial_number)
+    ```
+    """
+    def delete(pid, engine_name, deleteType, arg1) do
+      case deleteType do
+        :certificate -> delete_cert(pid, engine_name, arg1)
+        :role -> delete_cert(pid, engine_name, arg1)
+      end
+    end
+
+    def delete!(pid, engine_name, deleteType, arg1) do
+      case delete(pid, engine_name, deleteType, arg1) do
+        {:ok, body} -> {:ok, body}
+        _ -> raise "Failed to delete from PKI engine"
+      end
+    end
     @doc """
     Revoke a certificate in vault
       
@@ -84,18 +117,14 @@ defmodule Ptolemy.Engines.PKI do
     iex(2)> Ptolemy.Engines.PKI.cdeleteCert!(server, :pki_engine1, serial_number)
     ```
     """
-    def cdeleteCert!(pid, engine_name, serial_number) do
+    def delete_cert(pid, engine_name, serial_number) do
       path = get_pki_path!(pid, engine_name, "revoke")
-      deleteCert!(pid, path, serial_number)
+      path_delete_cert(pid, path, serial_number)
     end
   
-    def deleteCert!(pid, path, serial_number) do
+    def path_delete_cert(pid, path, serial_number) do
       client = create_client(pid)
-      resp = Engine.revoke_cert!(client, path, serial_number)
-      case resp do
-        status when status in 200..299 -> :ok
-        _ -> :error
-      end
+      Engine.revoke_cert(client, path, serial_number)
     end
     
     @doc """
@@ -103,21 +132,17 @@ defmodule Ptolemy.Engines.PKI do
       
     ## Example
     ```elixir
-    iex(2)> Ptolemy.Engines.PKI.cdeleteRole!(server, :pki_engine1, :role1)
+    iex(2)> Ptolemy.Engines.PKI.delete_role(server, :pki_engine1, :role1)
     ```
     """
-    def cdeleteRole!(pid, engine_name, role) do
+    def delete_role(pid, engine_name, role) do
       path = get_pki_path!(pid, engine_name, role, "roles")
-      deleteRole!(pid, path) 
+      path_delete_role(pid, path) 
     end
 
-    def deleteRole!(pid, path) do
+    def path_delete_role(pid, path) do
       client = create_client(pid)
-      resp = Engine.revoke_role!(client, path)
-      case resp do
-        status when status in 200..299 -> :ok
-        _ -> :error
-      end
+      Engine.revoke_role(client, path)
     end
   
     #Tesla client function
