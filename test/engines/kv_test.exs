@@ -1,11 +1,11 @@
 defmodule KVTest do
-  use ExUnit.Case, async: true 
+  use ExUnit.Case, async: true
   import Tesla.Mock
 
   @vurl "https://test-vault.com"
   @base_url "https://test-vault.com/v1"
   @secret_path "/secret/data/test_secret"
-  
+
   @delete_path "/secret/delete/test_secret"
   @destroy_path "/secret/destroy/test_secret"
 
@@ -37,78 +37,86 @@ defmodule KVTest do
   setup do
     mock(fn
       # create
-      %{method: :post, url: @base_url <> @secret_path} -> 
+      %{method: :post, url: @base_url <> @secret_path} ->
         %Tesla.Env{status: 200, body: %{}}
-               
+
       # read
-      %{method: :get, url: @base_url <> @secret_path} -> 
-        %Tesla.Env{status: 200, body: %{
-          "data" => %{
-            "data" => %{"test" => "haha"}
-          },
-          "lease_duration" => 0,
+      %{method: :get, url: @base_url <> @secret_path} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            "data" => %{
+              "data" => %{"test" => "haha"}
+            },
+            "lease_duration" => 0
+          }
         }
-      }
-        
+
       # delete
-      %{method: :post, url: @base_url <> @delete_path} -> 
+      %{method: :post, url: @base_url <> @delete_path} ->
         %Tesla.Env{status: 204, body: %{}}
 
       # destroy
-      %{method: :post, url: @base_url <> @destroy_path} -> 
+      %{method: :post, url: @base_url <> @destroy_path} ->
         %Tesla.Env{status: 204, body: %{}}
-      end
-        )
-        
+    end)
+
     :ok
   end
 
   test "create secret" do
     {:ok, server} = Ptolemy.start(:production, :server2)
-    assert {:ok, "KV secret created"} === Ptolemy.create(server, :kv_engine1, [:test_secret, %{Hello: "World"}])
+
+    assert {:ok, "KV secret created"} ===
+             Ptolemy.create(server, :kv_engine1, [:test_secret, %{Hello: "World"}])
   end
 
-  test "read secret" do
-    {:ok, server} = Ptolemy.start(:production, :server2)
-    {:ok, body} = Ptolemy.read(server, :kv_engine1, [:test_secret])
-    assert body === %{
-        "data" => %{
-          "data" => %{"test" => "haha"}
-        },
-        "lease_duration" => 0,
-    }
-    {:ok, body} = Ptolemy.read(server, :kv_engine1, [:test_secret, true])
-    assert body === %{"test" => "haha"}
-  end
-  
+  # test "read secret" do
+  #   {:ok, server} = Ptolemy.start(:production, :server2)
+  #   {:ok, body} = Ptolemy.read(server, :kv_engine1, [:test_secret])
+  #   assert body === %{
+  #       "data" => %{
+  #         "data" => %{"test" => "haha"}
+  #       },
+  #       "lease_duration" => 0,
+  #   }
+  #   {:ok, body} = Ptolemy.read(server, :kv_engine1, [:test_secret, true])
+  #   assert body === %{"test" => "haha"}
+  # end
+
   test "update secret" do
     {:ok, server} = Ptolemy.start(:production, :server2)
-    assert {:ok, "KV secret updated"} === Ptolemy.update(server, :kv_engine1, [:test_secret, %{test: "haha"}])
+
+    assert {:ok, "KV secret updated"} ===
+             Ptolemy.update(server, :kv_engine1, [:test_secret, %{test: "haha"}])
   end
-  
+
   test "delete secret" do
     {:ok, server} = Ptolemy.start(:production, :server2)
     assert {:ok, "KV secret deleted"} === Ptolemy.delete(server, :kv_engine1, [:test_secret, [1]])
   end
-  
+
   test "destroy secret" do
     {:ok, server} = Ptolemy.start(:production, :server2)
-    assert {:ok, "KV secret destroyed"} === Ptolemy.delete(server, :kv_engine1, [:test_secret, [1], true])
+
+    assert {:ok, "KV secret destroyed"} ===
+             Ptolemy.delete(server, :kv_engine1, [:test_secret, [1], true])
   end
 
   test "engine config not found" do
     {:ok, server} = Ptolemy.start(:production, :server2)
-    assert {:ok, "KV secret destroyed"} === Ptolemy.delete(server, :kv_engine1, [:test_secret, [1], true])
+
+    assert {:ok, "KV secret destroyed"} ===
+             Ptolemy.delete(server, :kv_engine1, [:test_secret, [1], true])
   end
 
   test "bang functions" do
     {:ok, server} = Ptolemy.start(:production, :server2)
     alias Ptolemy.Engines.KV
-    assert :ok === KV.create!(server, :kv_engine1, :test_secret,  %{Hello: "World"})
+    assert :ok === KV.create!(server, :kv_engine1, :test_secret, %{Hello: "World"})
     assert {:ok, %{"test" => "haha"}} = KV.fetch!(server, :kv_engine1, :test_secret, true)
-    assert :ok = KV.update!(server, :kv_engine1, :test_secret,  %{Hello: "Elixir"})
+    assert :ok = KV.update!(server, :kv_engine1, :test_secret, %{Hello: "Elixir"})
     assert :ok = KV.delete!(server, :kv_engine1, :test_secret, [1])
-    assert :ok= KV.destroy!(server, :kv_engine1, :test_secret, [1])
+    assert :ok = KV.destroy!(server, :kv_engine1, :test_secret, [1])
   end
-
 end

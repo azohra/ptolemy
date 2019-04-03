@@ -3,40 +3,40 @@ defmodule Ptolemy do
   `Ptolemy` provides client side functions calls to fetch, sets and update secrets within a remote vault server.
 
   ## Configuration
-    In order to properly use ptolemy, you must properly set a ptolemy configuration block. The configuration block must start with a key of type 
+    In order to properly use ptolemy, you must properly set a ptolemy configuration block. The configuration block must start with a key of type
     atom. It is recommended that the key be named after the remote vault server it is describing.
 
     The available configuration option are as follows:
     - `:vault_url` ::string **(Required)** - The url of the remote vault server.
 
     - `:auth_mode` ::string **(Required)** - The authentication method that ptolemy will try to do. As of `0.1.0`, `"GCP"` and `"approle"` are the only supported authentication methods.
-    
+
     - `:engines` ::list - The engines list configuration, all your engines configuration should be store in here.
       - A key with an engine name will correspond to a map containing:
         - `:engine_type` ::atom - the engine type value should always be the same as the module that implements the engine, e.g. KV, GCP.
         - `:engine_path` ::string - The engine's path, always need to start with the name and end with a `/`.
-        - `:secrets` ::map - The path of each secrets you wish to use. Note each secret will be a map in Vault 
-    
+        - `:secrets` ::map - The path of each secrets you wish to use. Note each secret will be a map in Vault
+
     - `:credentials` ::map **(Required)** - The sets of credentials that will be used to authenticate to vault
       - If you are using the Approle auth method:
         - `:role_id` ::string - The role ID to use to authenticate.
         - `:secred_id` ::string - The secret ID to use to authenticate.
-      
+
       - If you are using the GCP auth method:
         - `:svc_acc` ::Based64 encoded string - The Google service account used to authenticate through IAP and/or vault.
-      
+
        - In either case where you are using IAP you must provide `:target_audience` ::string - This is the client_id of the OAuth client
       protecting the resource. Can be found in Security -> Identity-Aware-Proxy -> Select the IAP resource -> Edit OAuth client.
-    
+
     - `:opts` ::List - Optional list.
       - `:iap_on` ::boolean - Sets whether the remote vautl server has IAP protection or not. If you are using GCP auth method you must provide
         a service account credential with both `Service Account Token Creator` and `Secured IAP User`. If you are using the Approle auth method
         you must provide `:svc_acc` and a `:target_audience` (client_id of the IAP protected resource) within the `:credential` block.
-      
+
       - `:exp` ::integer - The expiry of each access token (IAP - if enabled - and the vault token). The value has a default of 900 seconds(15 min), keep in mind
       the maximum time allowed for any google tokens is 3600 (1 hour), for vault that is entirely depended on what the administrator sets (default is 15min).
 
-  ## Configuration Examples: 
+  ## Configuration Examples:
     - For an approle configuration
     ```elixir
     config :ptolemy, :vaults,
@@ -67,6 +67,7 @@ defmodule Ptolemy do
 
   alias Ptolemy.Server
   alias Ptolemy.Engines.KV
+
   @doc """
   Entrypoint of ptolemy, this will start the process and store all necessary state for a connection to a remote vault server.
   Please make sure the configuration for `server` exists in your confi file
@@ -74,7 +75,7 @@ defmodule Ptolemy do
   ## Example
   ```elixir
   iex(2)> {:ok, server} = Ptolemy.start(:production, :server1)
-  {:ok, #PID<0.228.0>} 
+  {:ok, #PID<0.228.0>}
   ```
   """
   @spec start(atom, atom) :: {:ok, pid} | {:error, String.t()}
@@ -85,7 +86,7 @@ defmodule Ptolemy do
   @doc """
   create secrets in Vault, but it is not responsible for adding these secrets into the application configuration.
   opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
-  
+
   :kv_engine
     1. secret (Required)
     2. payload (Required)
@@ -94,26 +95,29 @@ defmodule Ptolemy do
   ## Example
   ```elixir
   iex(1)> Ptolemy.create(server, :kv_engine1, [:ptolemy, %{test: "foo"}])
-  :ok 
+  :ok
   ```
-  
+
   :gcp_engine
   """
   @spec create(pid, atom, [any]) :: :ok | {:ok, any()} | {:error, any()}
   def create(pid, engine_name, opts \\ []) do
-    Kernel.apply(Module.concat(Ptolemy.Engines, get_engine_type!(pid, engine_name)), :create, [pid, engine_name | opts] )
+    Kernel.apply(Module.concat(Ptolemy.Engines, get_engine_type!(pid, engine_name)), :create, [
+      pid,
+      engine_name | opts
+    ])
   end
 
   @doc """
   read all secrets from vault path
-  
+
   opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
 
   :kv_engine
     1. secret (Required)
     2. silent (Optional, default: false), use silent option if you want the data ONLY
     3. version (Optional, default: 0)
-  
+
   ## Example
   ```elixir
   iex(2)> Ptolemy.read(server, :kv_engine1, [:ptolemy, true])
@@ -122,14 +126,14 @@ defmodule Ptolemy do
   """
   @spec read(pid, atom, [any]) :: :ok | {:ok, any()} | {:error, any()}
   def read(pid, engine_name, opts \\ [], access_keys \\ []) do
-    Module.concat(Ptolemy.Engines, get_engine_type!(pid, engine_name)) 
-    |> apply(:fetch, [pid, engine_name | opts])
+    Module.concat(Ptolemy.Engines, get_engine_type!(pid, engine_name))
+    |> apply(:read, [pid, engine_name | opts])
     |> custom_get_in(access_keys)
   end
 
   @doc """
   Updates a secret
-  
+
   opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
 
   :kv_engine
@@ -145,19 +149,22 @@ defmodule Ptolemy do
   """
   @spec update(pid, atom, [any]) :: :ok | {:ok, any()} | {:error, any()}
   def update(pid, engine_name, opts \\ []) do
-    Kernel.apply(Module.concat(Ptolemy.Engines, get_engine_type!(pid, engine_name)), :update, [pid, engine_name | opts])
+    Kernel.apply(Module.concat(Ptolemy.Engines, get_engine_type!(pid, engine_name)), :update, [
+      pid,
+      engine_name | opts
+    ])
   end
 
   @doc """
   Delete a secret
-  
+
   opts requirements, ARGUMENTS MUST BE AN ORDERED LIST as follow
 
   :kv_engine
     1. secret (Required)
     2. vers (Required)
     3. destroy (Optional, default: false)
-    
+
     destroy will leave no trace of the secret
 
   ## Example
@@ -168,7 +175,10 @@ defmodule Ptolemy do
   """
   @spec delete(pid, atom, [any]) :: :ok | {:ok, any()} | {:error, any()}
   def delete(pid, engine_name, opts \\ []) do
-    Kernel.apply(Module.concat(Ptolemy.Engines, get_engine_type!(pid, engine_name)), :delete, [pid, engine_name | opts])
+    Kernel.apply(Module.concat(Ptolemy.Engines, get_engine_type!(pid, engine_name)), :delete, [
+      pid,
+      engine_name | opts
+    ])
   end
 
   @doc """
@@ -176,9 +186,8 @@ defmodule Ptolemy do
   """
   defp get_engine_type!(pid, engine_name) do
     with {:ok, conf} <- Server.get_data(pid, :engines),
-      {:ok, engine_conf} <- Keyword.fetch(conf, engine_name),
-      {:ok, engine_type} <- Map.fetch(engine_conf, :engine_type)
-    do
+         {:ok, engine_conf} <- Keyword.fetch(conf, engine_name),
+         {:ok, engine_type} <- Map.fetch(engine_conf, :engine_type) do
       engine_type
     else
       {:error, "Not found!"} -> raise "#{pid} does not have a engine config for #{engine_name}"
