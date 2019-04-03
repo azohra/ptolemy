@@ -20,7 +20,7 @@ defmodule Ptolemy.Engines.GCP do
     * `:secret_type` - type of secret generated for this role set. i.e. "access_token", "service_account_key"
     * `:project` - name of the GCP project to which this roleset's service account will belong
     * `:bindings` - bindings configuration string (read more here: https://www.vaultproject.io/docs/secrets/gcp/index.html#roleset-bindings)
-    * `:token_scopes` - **Applies only if secret type is "access_token"** list of OAuth scopes to assign to secrets generated under this role set
+    * `:token_scopes` - *Applies only if secret type is `access_token`* list of OAuth scopes belonging to secrets generated under this role set
   """
   @type roleset :: %{
           required(:secret_type) => String.t(),
@@ -128,13 +128,13 @@ defmodule Ptolemy.Engines.GCP do
   {:ok, %{
     "key_algorithm" => "KEY_ALG_RSA_2048"
     "key_type" => "TYPE_GOOGLE_CREDENTIALS_FILE",
-    "private_key_data" => "shhhh....."
+    "private_key_data" => "shhh....."
   }}
 
   iex(3)> Ptolemy.Engines.GCP.read(server, :gcp_engine, :access_token, "access_roleset")
   {:ok, %{
     "expires_at_seconds" => 1553274174,
-    "token" => "shhhh.....",
+    "token" => "shhh.....",
     "token_ttl" => 3599
   }}
   ```
@@ -175,10 +175,6 @@ defmodule Ptolemy.Engines.GCP do
   end
 
   @doc """
-  <<<<<<< HEAD
-
-  =======
-  >>>>>>> example docs
   The Vault Google Secret Engine API offers multiple endpoints for rotating roleset accounts to
   invalidate previously generated secrets. There are two methods:
 
@@ -210,41 +206,10 @@ defmodule Ptolemy.Engines.GCP do
   end
 
   @doc """
-  Creates a Tesla Client whose base URL refers to the given GCP engine.
-  The GCP Engine requires this client to make API calls to the correct engine
-  """
-
-  @spec create_client(pid(), atom() | String.t()) :: Tesla.Client.t()
-  def create_client(pid, engine_name) do
-    creds = Server.fetch_credentials(pid)
-    {:ok, url} = Server.get_data(pid, :vault_url)
-    {:ok, engines} = Server.get_data(pid, :engines)
-
-    engine_path =
-      engines
-      |> Keyword.fetch!(engine_name)
-      |> Map.fetch!(:path)
-
-    adapter =
-      {Tesla.Adapter.Hackney, [ssl_options: [{:versions, [:"tlsv1.2"]}], recv_timeout: 20_000]}
-
-    Tesla.client(
-      [
-        {Tesla.Middleware.BaseUrl, "#{url}/v1/#{engine_path}"},
-        {Tesla.Middleware.Headers, creds},
-        {Tesla.Middleware.Timeout, timeout: 5_000},
-        {Tesla.Middleware.JSON, []}
-      ],
-      adapter
-    )
-  end
-
-  @doc """
   Generates type `roleset` from inputs
   """
-
-  @spec create_roleset(gcp_secret_type, String.t(), String.t(), list(String.t())) :: roleset
-  def create_roleset(secret_type, project, bindings, scopes \\ []) do
+  @spec generate_roleset(gcp_secret_type, String.t(), String.t(), list(String.t())) :: roleset
+  def generate_roleset(secret_type, project, bindings, scopes \\ []) do
     case secret_type do
       :access_token ->
         %{
@@ -264,5 +229,51 @@ defmodule Ptolemy.Engines.GCP do
       _ ->
         {:error, "Unrecognized GCP secret type"}
     end
+  end
+
+  @doc """
+  Creates a Tesla Client whose base URL refers to the given GCP engine.
+  The GCP Engine requires this client to make API calls to the correct engine
+  """
+  @spec create_client(pid(), atom()) :: Tesla.Client.t()
+  def create_client(pid, engine_name) do
+    creds = Server.fetch_credentials(pid)
+    {:ok, url} = Server.get_data(pid, :vault_url)
+    {:ok, engines} = Server.get_data(pid, :engines)
+
+    engine_path =
+      engines
+      |> Keyword.fetch!(engine_name)
+      |> Map.fetch!(:engine_path)
+
+    adapter =
+      {Tesla.Adapter.Hackney, [ssl_options: [{:versions, [:"tlsv1.2"]}], recv_timeout: 10_000]}
+
+    middleware = client_middleware(Mix.env(), url, engine_path, creds)
+
+    if Mix.env() == :test do
+      Tesla.client(middleware)
+    else
+      Tesla.client(middleware, adapter)
+    end
+  end
+
+  @doc false
+  defp client_middleware(:test, base_url, engine_path, creds) do
+    [
+      {Tesla.Middleware.BaseUrl, "#{base_url}/v1/#{engine_path}"},
+      {Tesla.Middleware.Headers, creds},
+      {Tesla.Middleware.JSON, []}
+    ]
+  end
+
+  @doc false
+  defp client_middleware(_env, base_url, engine_path, creds) do
+    [
+      {Tesla.Middleware.BaseUrl, "#{base_url}/v1/#{engine_path}"},
+      {Tesla.Middleware.Headers, creds},
+      {Tesla.Middleware.Timeout, timeout: 5_000},
+      {Tesla.Middleware.JSON, []}
+    ]
   end
 end

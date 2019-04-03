@@ -8,6 +8,7 @@ config :ptolemy,
       vault_url: "https://test-vault.com",
       engines: [
         gcp_engine: %{
+          engine_type: :GCP,
           engine_path: "gcp/"
         }
       ],
@@ -35,8 +36,12 @@ config :ptolemy,
           engine_path: "secret/",
           secrets: %{
             test_secret: "/test_secret"
+          }
+        },
+        gcp_engine1: %{
+          engine_type: :GCP,
+          engine_path: "gcp/"
         }
-      }
       ],
       auth: %{
         method: :Approle,
