@@ -38,7 +38,7 @@ defmodule Ptolemy.Engines.GCP do
     create(pid, engine_name, roleset_name, roleset_payload)
     |> case do
       {:ok, _body} -> :ok
-      {:error, err} -> throw(err)
+      {:error, err} -> raise err
     end
   end
 
@@ -51,7 +51,7 @@ defmodule Ptolemy.Engines.GCP do
     read(pid, engine_name, secret_type, roleset_name)
     |> case do
       {:ok, body} -> body
-      {:error, err} -> throw(err)
+      {:error, err} -> raise err
     end
   end
 
@@ -64,7 +64,7 @@ defmodule Ptolemy.Engines.GCP do
     update(pid, engine_name, roleset_name, roleset_payload)
     |> case do
       {:ok, _} -> :ok
-      {:error, err} -> throw(err)
+      {:error, err} -> raise err
     end
   end
 
@@ -80,7 +80,7 @@ defmodule Ptolemy.Engines.GCP do
     delete(pid, engine_name, secret_type, roleset_name)
     |> case do
       {:ok, _} -> :ok
-      {:error, err} -> throw(err)
+      {:error, err} -> raise err
     end
   end
 
@@ -95,7 +95,7 @@ defmodule Ptolemy.Engines.GCP do
     |> Engine.read_roleset(roleset_name)
     |> case do
       {:ok, body} -> body
-      {:error, err} -> throw(err)
+      {:error, err} -> raise err
     end
   end
 
@@ -113,7 +113,7 @@ defmodule Ptolemy.Engines.GCP do
   {:ok, "Roleset implemented"}
   ```
   """
-  @spec create(pid(), atom(), String.t(), roleset) :: {:ok | :error, String.t() | atom()}
+  @spec create(pid(), atom(), String.t(), roleset) :: {:ok | :error, String.t()}
   def create(pid, engine_name, roleset_name, roleset_payload) do
     create_client(pid, engine_name)
     |> Engine.create_roleset(roleset_name, roleset_payload)
@@ -169,7 +169,7 @@ defmodule Ptolemy.Engines.GCP do
   {:ok, "Roleset implemented"}
   ```
   """
-  @spec update(pid(), atom(), String.t(), roleset) :: {:ok | :error, String.t() | atom()}
+  @spec update(pid(), atom(), String.t(), roleset) :: {:ok | :error, String.t()}
   def update(pid, engine_name, roleset_name, roleset_payload) do
     create(pid, engine_name, roleset_name, roleset_payload)
   end
@@ -194,7 +194,7 @@ defmodule Ptolemy.Engines.GCP do
   {:ok, "Rotated"}
   ```
   """
-  @spec delete(pid(), atom(), gcp_secret_type, String.t()) :: {:ok | :error, String.t() | atom()}
+  @spec delete(pid(), atom(), gcp_secret_type, String.t()) :: {:ok | :error, String.t()}
   def delete(pid, engine_name, secret_type, roleset_name) do
     client = create_client(pid, engine_name)
 
@@ -238,6 +238,7 @@ defmodule Ptolemy.Engines.GCP do
   @spec create_client(pid(), atom()) :: Tesla.Client.t()
   def create_client(pid, engine_name) do
     creds = Server.fetch_credentials(pid)
+
     {:ok, url} = Server.get_data(pid, :vault_url)
     {:ok, engines} = Server.get_data(pid, :engines)
 
@@ -272,7 +273,7 @@ defmodule Ptolemy.Engines.GCP do
     [
       {Tesla.Middleware.BaseUrl, "#{base_url}/v1/#{engine_path}"},
       {Tesla.Middleware.Headers, creds},
-      {Tesla.Middleware.Timeout, timeout: 5_000},
+      {Tesla.Middleware.Timeout, timeout: 10_000},
       {Tesla.Middleware.JSON, []}
     ]
   end

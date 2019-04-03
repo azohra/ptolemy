@@ -225,14 +225,11 @@ defmodule Ptolemy.Engines.GCPTest do
     assert @read_roleset_response["data"] ===
              GCP.read_roleset!(server, :gcp_engine1, @roleset_name)
 
-    resp =
-      try do
-        GCP.read_roleset!(server, :gcp_engine1, @roleset_name_broken)
-      catch
-        err -> err
-      end
-
-    assert resp === "Reading roleset failed, Status: 400 with error: error_msg"
+    assert_raise(
+      RuntimeError,
+      "Reading roleset failed, Status: 400 with error: error_msg",
+      fn -> GCP.read_roleset!(server, :gcp_engine1, @roleset_name_broken) end
+    )
   end
 
   test "CRUD bang! functions" do
