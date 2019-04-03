@@ -15,7 +15,7 @@ defmodule Ptolemy.Engines.PKI do
       
     ## Example
     ```elixir
-    iex(2)> Ptolemy.Engines.PKI.create(server, :pki_engine1, :role1, %{allow_any_name: true})
+    iex(2)> Ptolemy.Engines.PKI.create(server, :pki_engine1, :test_role1, %{allow_any_name: true})
     ```
     """
     def create(pid, engine_name, role, payload \\ %{}) do
@@ -41,7 +41,7 @@ defmodule Ptolemy.Engines.PKI do
       
     ## Example
     ```elixir
-    iex(2)> Ptolemy.Engines.PKI.read(server, :pki_engine1, :role1, "www.example.com")
+    iex(2)> Ptolemy.Engines.PKI.read(server, :pki_engine1, :test_role1, "www.example.com")
     ```
     """
     def read(pid, engine_name, role, common_name, payload \\ %{}) do
@@ -69,7 +69,7 @@ defmodule Ptolemy.Engines.PKI do
       
     ## Example
     ```elixir
-    iex(2)> Ptolemy.Engines.PKI.update(server, :pki_engine1, :role1, %{allow_any_name: false}
+    iex(2)> Ptolemy.Engines.PKI.update(server, :pki_engine1, :test_role1, %{allow_any_name: false})
     ```
     """
     def update(pid, engine_name, role, payload \\ %{}) do
@@ -93,19 +93,20 @@ defmodule Ptolemy.Engines.PKI do
     Either revoke a certificate or revoke a role from vault      
     ## Example
     ```elixir
-    iex(2)> Ptolemy.Engines.PKI.delete(server, :pki_engine1, :certificate, serial_number)
+    iex(2)> Ptolemy.Engines.PKI.delete(server, :pki_engine1, :certificate, "17:84:7f:5b:bd:90:da:21:16")
+    iex(3)> Ptolemy.Engines.PKI.delete(server, :pki_engine1, :role, :test_role1)
     ```
     """
     def delete(pid, engine_name, deleteType, arg1) do
       case deleteType do
         :certificate -> delete_cert(pid, engine_name, arg1)
-        :role -> delete_cert(pid, engine_name, arg1)
+        :role -> delete_role(pid, engine_name, arg1)
       end
     end
 
     def delete!(pid, engine_name, deleteType, arg1) do
       case delete(pid, engine_name, deleteType, arg1) do
-        {:ok, body} -> {:ok, body}
+        {:ok, body} -> :ok
         _ -> raise "Failed to delete from PKI engine"
       end
     end
