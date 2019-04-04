@@ -10,7 +10,6 @@ defmodule Ptolemy do
     - `:vault_url` ::string **(Required)** - The url of the remote vault server.
 
     - `:auth_mode` ::string **(Required)** - The authentication method that ptolemy will try to do. As of `0.1.0`, `"GCP"` and `"approle"` are the only supported authentication methods.
-
     - `:engines` ::list - The engines list configuration, all your engines configuration should be store in here.
       - A key with an engine name will correspond to a map containing:
         - `:engine_type` ::atom - the engine type value should always be the same as the module that implements the engine, e.g. KV, GCP.
@@ -41,32 +40,31 @@ defmodule Ptolemy do
     ```elixir
     config :ptolemy, :vaults,
       server1: %{
-        vault_url: "http://localhost:8200",
-        auth_mode: "approle",
+        vault_url: "https://test-vault.com",
         engines: [
           kv_engine1: %{
-              engine_type: :KV,
-              engine_path: "secret/",
-              secrets: %{
-                ptolemy: "/ptolemy"
-              }
-            },
+            engine_type: :KV,
+            engine_path: "secret/",
+            secrets: %{
+              test_secret: "/test_secret"
+            }
+          },
         ],
-      credentials: %{
-        role_id: System.get_env("ROLE_ID"),
-        secret_id: System.get_env("SECRET_ID")
-      },
-      opts: [
-        iap_on: false,
-        exp: 6000
-      ]
-    }
+        auth: %{
+          method: :Approle,
+          credentials: %{
+            role_id: "test",
+            secret_id: "test"
+          },
+          auto_renew: true,
+          opts: []
+        }
+      }
    ```
   """
   require Logger
 
   alias Ptolemy.Server
-
   @doc """
   Entrypoint of ptolemy, this will start the process and store all necessary state for a connection to a remote vault server.
   Please make sure the configuration for `server` exists in your confi file
@@ -93,8 +91,8 @@ defmodule Ptolemy do
 
   ## Example
   ```elixir
-  iex(1)> Ptolemy.create(server, :kv_engine1, [:ptolemy, %{test: "foo"}])
-  :ok
+  iex(1)> Ptolemy.create(server, :kv_engine1, [:test_secret, %{test: "foo"}])
+  {:ok, "KV secret created"}
   ```
 
   GCP Engine
@@ -110,6 +108,15 @@ defmodule Ptolemy do
   }])
   {:ok, "Roleset implemented"}
   ```
+
+  PKI Engine
+    1. role name (Required)
+    2. role specifications (Optional)
+
+  ## Example
+  ```elixir
+  iex(1)> Ptolemy.create(server, :pki_engine1, [:test_role1, %{allow_any_name: true}])
+  {:ok, "PKI role created"}
   """
   @spec create(pid, atom, [any]) :: :ok | {:ok, any()} | {:error, any()}
   def create(pid, engine_name, opts \\ []) do
@@ -147,6 +154,22 @@ defmodule Ptolemy do
     expires_at_seconds: 1537400046,
     token_ttl: 3599
     }}
+  ```
+
+  PKI Engine
+    1. role name (Required)
+    2. common name (Required) See vault docs for more details
+    3. certificate specs (optional)
+  
+    ## Example
+  ```elixir
+  iex(2)> Ptolemy.read(server, :pki_engine1, [:test_role1, "www.example.com"])
+  {:ok, %{
+        "data" => %{
+            "certificate" => "Certificate itself",
+            "serial_number" => "5b:65:31:58"
+        },
+        "lease_duration" => 0}
   ```
   """
   @spec read(pid, atom, [any]) :: :ok | {:ok, any()} | {:error, any()}
@@ -186,6 +209,18 @@ defmodule Ptolemy do
   }])
   {:ok, "Roleset implemented"}
   ```
+
+  PKI Engine
+    1. role name (Required)
+    2. new specifications (Optional) overwrite previous entirely
+
+  See Ptolemy.Engines.GCP documentation for restrictions on updating rolesets
+
+  ## Example
+  ```elixir
+  iex(3)> Ptolemy.update(server, :pki_engine1, [:test_role1, %{allow_any_name: true}])
+  {:ok, "PKI role updated"}
+  ```
   """
   @spec update(pid, atom, [any]) :: :ok | {:ok, any()} | {:error, any()}
   def update(pid, engine_name, opts \\ []) do
@@ -203,9 +238,7 @@ defmodule Ptolemy do
   KV Engine
     1. secret (Required)
     2. vers (Required)
-    3. destroy (Optional, default: false)
-
-    destroy will leave no trace of the secret
+    3. destroy (Optional, default: false), destroy will leave no trace of the secret
 
   ## Example
   ```elixir
@@ -223,6 +256,19 @@ defmodule Ptolemy do
   ```elixir
   iex(4)> Ptolemy.delete(server, :gcp_engine1, [:access_token, "roleset_name"])
   {:ok, "Rotated"}
+
+  PKI Engine
+    1. delete type (Required) :role/:certificate
+    2. arg1 (Required)
+      a. :role -> role name
+      b. :certificate -> serial number
+
+  ## Example
+  ```elixir
+  iex(4)> Ptolemy.delete(server, :pki_engine1, [:certificate, "17:84:7f:5b:bd:90:da:21:16"])
+  {:ok, "PKI certificate revoked"}
+  iex(5)> Ptolemy.delete(server, :pki_engine1, [:role, :test_tole1])
+  {:ok, "PKI role revoked"}
   ```
   """
   @spec delete(pid, atom, [any]) :: :ok | {:ok, any()} | {:error, any()}
@@ -233,9 +279,9 @@ defmodule Ptolemy do
     ])
   end
 
-  @doc """
-  Helper function used to determine what type does the engine correspond to
-  """
+  ################################################################################
+  ##  Helper function used to determine what type does the engine correspond to ##
+  ################################################################################
   defp get_engine_type!(pid, engine_name) do
     with {:ok, conf} <- Server.get_data(pid, :engines),
          {:ok, engine_conf} <- Keyword.fetch(conf, engine_name),
