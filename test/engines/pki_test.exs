@@ -1,4 +1,4 @@
-defmodule KVTest do
+defmodule PKITest do
     use ExUnit.Case, async: true 
     import Tesla.Mock
   
@@ -92,17 +92,17 @@ defmodule KVTest do
     
     test "update role" do
       {:ok, server} = Ptolemy.start(:production, :server2)
-      assert {:ok, "KV secret updated"} === Ptolemy.update(server, :pki_engine1, [:test_role1, %{allow_any_name: false}])
+      assert {:ok, "PKI role created"} === Ptolemy.update(server, :pki_engine1, [:test_role1, %{allow_any_name: false}])
     end
     
     test "delete cert" do
       {:ok, server} = Ptolemy.start(:production, :server2)
-      assert {:ok, "KV secret deleted"} === Ptolemy.delete(server, :pki_engine1, [:certificate, "5b:65:31:58"])
+      assert {:ok, "PKI certificate revoked"} === Ptolemy.delete(server, :pki_engine1, [:certificate, "5b:65:31:58"])
     end
     
     test "delete role" do
       {:ok, server} = Ptolemy.start(:production, :server2)
-      assert {:ok, "KV secret destroyed"} === Ptolemy.delete(server, :kv_engine1, [:role, :test_role1])
+      assert {:ok, "PKI role revoked"} === Ptolemy.delete(server, :kv_engine1, [:role, :test_role1])
     end
   
     test "bang functions" do
