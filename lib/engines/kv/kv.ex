@@ -126,7 +126,7 @@ defmodule Ptolemy.Engines.KV do
   {:ok, "KV secret created"}
   ```
   """
-  @spec create(pid(), atom(), atom(), map(), integer) :: :ok
+  @spec create(pid(), atom(), atom(), map(), integer) :: {:ok | :error, String.t()}
   def create(pid, engine_name, secret, payload, cas \\ nil) do
     path = get_kv_path!(pid, engine_name, secret, "data")
     path_create(pid, path, payload, cas)

@@ -18,19 +18,21 @@ defmodule Ptolemy.Engines.PKI do
     iex(2)> Ptolemy.Engines.PKI.create(server, :pki_engine1, :test_role1, %{allow_any_name: true})
     ```
     """
+    @spec create(pid(), atom(), atom(), map()) :: {:ok | :error, String.t()}
     def create(pid, engine_name, role, payload \\ %{}) do
       path = get_pki_path!(pid, engine_name, role, "roles")
       path_create(pid, path, payload)
     end
 
+    @spec create!(pid(), atom(), atom(), map()) :: :ok
     def create!(pid, engine_name, role, payload \\ %{}) do
       case create(pid, engine_name, role, payload) do
         {:error, msg} -> raise RuntimeError, message: msg
-        :error -> raise RuntimeError, message: "Failed to create certificate from #{role}"
         _resp -> :ok
       end
     end
     
+    @spec path_create(pid(), String.t(), map()) :: {:ok | :error, String.t()}
     def path_create(pid, path, payload \\ %{}) do
       client = create_client(pid)
       Engine.create_role(client, path, payload)
@@ -44,6 +46,7 @@ defmodule Ptolemy.Engines.PKI do
     iex(2)> Ptolemy.Engines.PKI.read(server, :pki_engine1, :test_role1, "www.example.com")
     ```
     """
+    @spec read(pid(), atom(), atom(), String.t(), map()) :: {:ok | :error, String.t()}
     def read(pid, engine_name, role, common_name, payload \\ %{}) do
       path = get_pki_path!(pid, engine_name, role, "issue")
       path_read(pid, path, common_name, payload)
@@ -52,6 +55,7 @@ defmodule Ptolemy.Engines.PKI do
     @doc """
     The same as read(), except it raises an exception when error occurs like all bang functions
     """
+    @spec read!(pid(), atom(), atom(), String.t(), map()) :: :ok
     def read!(pid, engine_name, role, common_name, payload \\ %{}) do
       case read(pid, engine_name, role, common_name, payload) do
         {:error, msg} -> raise RuntimeError, message: msg
@@ -59,6 +63,7 @@ defmodule Ptolemy.Engines.PKI do
       end
     end
 
+    @spec read(pid(), String.t(), String.t(), map()) :: {:ok | :error, String.t()}
     def path_read(pid, path, common_name, payload) do
       client = create_client(pid)
       Engine.generate_secret(client, path, common_name, payload)
@@ -72,11 +77,13 @@ defmodule Ptolemy.Engines.PKI do
     iex(2)> Ptolemy.Engines.PKI.update(server, :pki_engine1, :test_role1, %{allow_any_name: false})
     ```
     """
+    @spec update(pid(), atom(), atom(), map()) :: {:ok | :error, String.t()}
     def update(pid, engine_name, role, payload \\ %{}) do
       path = get_pki_path!(pid, engine_name, role, "roles")
       path_update(pid, path, payload)
     end
 
+    @spec update!(pid(), atom(), atom(), map()) :: :ok
     def update!(pid, engine_name, secret, payload \\ %{}) do
       case update(pid, engine_name, secret, payload) do
         {:error, msg} -> raise RuntimeError, message: msg
@@ -84,6 +91,7 @@ defmodule Ptolemy.Engines.PKI do
       end
     end
   
+    @spec path_update(pid(), String.t(), map()) :: {:ok | :error, String.t()}
     def path_update(pid, path, payload \\ %{}) do
       client = create_client(pid)
       case Engine.create_role(client, path, payload) do
@@ -100,6 +108,7 @@ defmodule Ptolemy.Engines.PKI do
     iex(3)> Ptolemy.Engines.PKI.delete(server, :pki_engine1, :role, :test_role1)
     ```
     """
+    @spec delete(pid(), atom(), String.t(), any()) :: {:ok | :error, String.t()}
     def delete(pid, engine_name, deleteType, arg1) do
       case deleteType do
         :certificate -> delete_cert(pid, engine_name, arg1)
@@ -107,6 +116,7 @@ defmodule Ptolemy.Engines.PKI do
       end
     end
 
+    @spec delete!(pid(), atom(), String.t(), any()) :: :ok
     def delete!(pid, engine_name, deleteType, arg1) do
       case delete(pid, engine_name, deleteType, arg1) do
         {:ok, _} -> :ok
@@ -121,11 +131,13 @@ defmodule Ptolemy.Engines.PKI do
     iex(2)> Ptolemy.Engines.PKI.delete_cert(server, :pki_engine1, serial_number)
     ```
     """
+    @spec delete_cert(pid(), atom(), String.t()) :: {:ok | :error, String.t()}
     def delete_cert(pid, engine_name, serial_number) do
       path = get_pki_path!(pid, engine_name, "revoke")
       path_delete_cert(pid, path, serial_number)
     end
   
+    @spec path_delete_cert(pid(), String.t(), String.t()) :: {:ok | :error, String.t()}
     def path_delete_cert(pid, path, serial_number) do
       client = create_client(pid)
       Engine.revoke_cert(client, path, serial_number)
@@ -139,11 +151,13 @@ defmodule Ptolemy.Engines.PKI do
     iex(2)> Ptolemy.Engines.PKI.delete_role(server, :pki_engine1, :test_role1)
     ```
     """
+    @spec delete_role(pid(), atom(), atom()) :: {:ok | :error, String.t()}
     def delete_role(pid, engine_name, role) do
       path = get_pki_path!(pid, engine_name, role, "roles")
       path_delete_role(pid, path) 
     end
 
+    @spec path_delete_role(pid(), String.t()) :: {:ok | :error, String.t()}
     def path_delete_role(pid, path) do
       client = create_client(pid)
       Engine.revoke_role(client, path)
