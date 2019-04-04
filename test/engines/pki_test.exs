@@ -6,7 +6,7 @@ defmodule PKITest do
     @base_url "https://test-vault.com/v1"
 
     @create_path "/pki/roles/role1"
-    @read_path "pki/issue/role1"
+    @read_path "/pki/issue/role1"
     @delete_role_path "/pki/roles/role1"
     @delete_cert_path "/pki/revoke"
   
@@ -102,7 +102,7 @@ defmodule PKITest do
     
     test "delete role" do
       {:ok, server} = Ptolemy.start(:production, :server2)
-      assert {:ok, "PKI role revoked"} === Ptolemy.delete(server, :kv_engine1, [:role, :test_role1])
+      assert {:ok, "PKI role revoked"} === Ptolemy.delete(server, :pki_engine1, [:role, :test_role1])
     end
   
     test "bang functions" do

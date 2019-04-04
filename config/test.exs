@@ -41,6 +41,13 @@ config :ptolemy,
         gcp_engine1: %{
           engine_type: :GCP,
           engine_path: "gcp/"
+        },
+        pki_engine1: %{
+          engine_type: :PKI,
+          engine_path: "pki/",
+          roles: %{
+              test_role1: "/role1"
+            }
         }
       ],
       auth: %{
