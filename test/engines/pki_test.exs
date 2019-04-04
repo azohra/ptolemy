@@ -92,7 +92,7 @@ defmodule PKITest do
     
     test "update role" do
       {:ok, server} = Ptolemy.start(:production, :server2)
-      assert {:ok, "PKI role created"} === Ptolemy.update(server, :pki_engine1, [:test_role1, %{allow_any_name: false}])
+      assert {:ok, "PKI role updated"} === Ptolemy.update(server, :pki_engine1, [:test_role1, %{allow_any_name: false}])
     end
     
     test "delete cert" do
@@ -118,7 +118,7 @@ defmodule PKITest do
             "private_key_type" => "rsa",
             "serial_number" => "5b:65:31:58"
         },
-        "lease_duration" => 0,
+        "lease_duration" => 0
       }} === PKI.read!(server, :pki_engine1, :test_role1, "www.example.com")
       assert :ok = PKI.update!(server, :pki_engine1, :test_role1, %{allow_any_name: false})
       assert :ok = PKI.delete!(server, :pki_engine1, :certificate, "5b:65:31:58")

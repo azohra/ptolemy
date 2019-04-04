@@ -86,7 +86,10 @@ defmodule Ptolemy.Engines.PKI do
   
     def path_update(pid, path, payload \\ %{}) do
       client = create_client(pid)
-      Engine.create_role(client, path, payload)
+      case Engine.create_role(client, path, payload) do
+        {:ok, _} ->  {:ok, "PKI role updated"}
+        err -> err
+      end
     end
     
     @doc """
