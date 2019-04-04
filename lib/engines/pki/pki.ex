@@ -193,8 +193,8 @@ defmodule Ptolemy.Engines.PKI do
       do
         "/#{path}#{operation}"
       else
-        {:error, "Not found!"} -> throw "#{pid} does not have a pki_engine config"
-        :error -> throw "Could not find engine_name in specified config"
+        {:error, "Not found!"} -> raise "#{pid} does not have a pki_engine config"
+        :error -> raise "Could not find engine_name in specified config"
       end
     end
   
