@@ -1,11 +1,10 @@
 defmodule KVTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   import Tesla.Mock
 
   @vurl "https://test-vault.com"
   @base_url "https://test-vault.com/v1"
   @secret_path "/secret/data/test_secret"
-
   @delete_path "/secret/delete/test_secret"
   @destroy_path "/secret/destroy/test_secret"
 

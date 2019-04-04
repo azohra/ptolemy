@@ -52,7 +52,6 @@ defmodule Ptolemy.Engines.KV do
 
   @doc """
   Fetches all of a secret's keys and value via the `:kv_engine` configuration.
-
   See `fetch/2` for the description of the silent and version options.
   ## Example
   ```elixir
@@ -312,8 +311,8 @@ defmodule Ptolemy.Engines.KV do
          %{engine_path: path, secrets: _secrets} <- kv_conf do
       make_kv_path!(path, secret, operation)
     else
-      {:error, "Not found!"} -> throw("#{pid} does not have a kv_engine config")
-      :error -> throw("Could not find engine_name in specified config")
+      {:error, "Not found!"} -> raise("#{pid} does not have a kv_engine config")
+      :error -> raise("Could not find engine_name in specified config")
     end
   end
 

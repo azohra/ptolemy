@@ -10,7 +10,6 @@ defmodule Ptolemy do
     - `:vault_url` ::string **(Required)** - The url of the remote vault server.
 
     - `:auth_mode` ::string **(Required)** - The authentication method that ptolemy will try to do. As of `0.1.0`, `"GCP"` and `"approle"` are the only supported authentication methods.
-
     - `:engines` ::list - The engines list configuration, all your engines configuration should be store in here.
       - A key with an engine name will correspond to a map containing:
         - `:engine_type` ::atom - the engine type value should always be the same as the module that implements the engine, e.g. KV, GCP.
@@ -66,7 +65,6 @@ defmodule Ptolemy do
   require Logger
 
   alias Ptolemy.Server
-
   @doc """
   Entrypoint of ptolemy, this will start the process and store all necessary state for a connection to a remote vault server.
   Please make sure the configuration for `server` exists in your confi file
