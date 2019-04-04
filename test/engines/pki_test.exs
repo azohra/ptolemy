@@ -1,5 +1,5 @@
 defmodule PKITest do
-    use ExUnit.Case, async: true 
+    use ExUnit.Case, async: false 
     import Tesla.Mock
   
     @vurl "https://test-vault.com"

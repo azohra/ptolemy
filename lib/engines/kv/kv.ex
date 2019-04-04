@@ -300,8 +300,8 @@ defmodule Ptolemy.Engines.KV do
       {:ok, secret_path} = Map.fetch(secrets, secret)
       make_kv_path!(path, secret_path, operation)
     else
-      {:error, "Not found!"} -> throw("#{pid} does not have a kv_engine config")
-      :error -> throw("Could not find engine_name in specified config")
+      {:error, "Not found!"} -> raise("#{pid} does not have a kv_engine config")
+      :error -> raise("Could not find engine_name in specified config")
     end
   end
 
