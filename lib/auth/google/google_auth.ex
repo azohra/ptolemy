@@ -72,7 +72,7 @@ defmodule Ptolemy.Auth.Google do
 
     token()
     |> with_header_args(@google_jwt_header)
-    # need to overide the overide (T.T) +/- cpu offset
+    # need to override the override (T.T) +/- cpu offset
     |> with_claim_generator("exp", fn -> :os.system_time(:seconds) + time end)
     |> with_claims(base_claim)
     |> with_aud(@google_aud)

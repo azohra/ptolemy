@@ -109,7 +109,10 @@ defmodule Ptolemy.Providers.Vault do
     data
   end
 
-  defp custom_get_in(data, key_list) do
-    get_in(data, key_list)
+  defp custom_get_in(data, [head | tail]) do
+    case data[head] do
+      nil -> raise "#{head} key does not exist in #{inspect data}"
+      data -> custom_get_in(data, tail) 
+    end
   end
 end

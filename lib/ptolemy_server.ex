@@ -25,7 +25,7 @@ defmodule Ptolemy.Server do
     config =
       Application.get_env(:ptolemy, :vaults)
       |> Keyword.get(server)
-      |> overide?(opts)
+      |> override?(opts)
 
     with {:ok, []} <- validate(config) do
       GenServer.start_link(__MODULE__, config, name: pid)
@@ -48,8 +48,9 @@ defmodule Ptolemy.Server do
           tokens
 
         {:error, _} ->
-          with {:ok, tok} <- GenServer.call(pid, :auth, 15000) do
-            [Map.fetch!(tok, :token)]
+          with {:ok, _} <- GenServer.call(pid, :auth, 15000) do
+            {:ok, tokens} = GenServer.call(pid, :fetch_creds)
+            tokens
           else
             {:error, _msg} = err -> err
           end
@@ -113,22 +114,22 @@ defmodule Ptolemy.Server do
     end
   end
 
-  # helper functions to overide conf
-  defp overide?(map, opts) do
+  # helper functions to override conf
+  defp override?(map, opts) do
     if opts == [] do
       map
     else
-      overide(map, Keyword.keys(opts), opts)
+      override(map, Keyword.keys(opts), opts)
     end
   end
 
-  defp overide(map, [head | tail], opts) do
+  defp override(map, [head | tail], opts) do
     v = Keyword.get(opts, head)
     new_map = Map.put(map, head, v)
-    overide(new_map, tail, opts)
+    override(new_map, tail, opts)
   end
 
-  defp overide(map, [], _opts), do: map
+  defp override(map, [], _opts), do: map
 
   defp parse_opts(opts) when is_list(opts) do
     case opts do
@@ -140,7 +141,7 @@ defmodule Ptolemy.Server do
 
         case svc do
           :reuse -> opts
-          _ -> opts |> Keyword.replace!(:iap_svc_acc, svc |> Jason.decode!())
+          _ -> opts |> Keyword.replace!(:iap_svc_acc, svc |> Base.decode64!()|> Jason.decode!())
         end
     end
   end
@@ -152,7 +153,7 @@ defmodule Ptolemy.Server do
   defp parse_creds(creds) do
     case creds do
       %{gcp_svc_acc: svc, vault_role: _role, exp: _exp} ->
-        {:ok, Map.replace!(creds, :gcp_svc_acc, svc |> Jason.decode!())}
+        {:ok, Map.replace!(creds, :gcp_svc_acc, svc |> Base.decode64!() |> Jason.decode!())}
 
       %{secret_id: _id, role_id: _rid} = parsed ->
         {:ok, parsed}
@@ -298,6 +299,7 @@ defmodule Ptolemy.Server do
           |> Map.get(:auth)
           |> Map.get(:credentials)
           |> Map.get(:gcp_svc_acc)
+          |> Base.decode64!() 
           |> Jason.decode!()
 
         _ ->

@@ -142,7 +142,7 @@ defmodule PtolemyServerTest do
                   method: :GCP,
                   credentials: %{
                     gcp_svc_acc:
-                      "{\"type\":\"service_account\",\"token_uri\":\"https://accounts.google.com/o/oauth2/token\",\"project_id\":\"some-id-of-a-fake-project\",\"private_key_id\":\"WHY-are-you-trying-to-steal-this\",\"private_key\":\"-----BEGIN RSA PRIVATE KEY-----\\nMIIBOAIBAAJAfake/pem/fake/pem/UUJjt4/G0UsrH+nDeEzNuTsJx9JVgtl4f8\\nfake/pem/tw5CbE8PDOA1vLo8cZT1R6YjQIDAQABAkBierbKXuJvjIZ5rid6ZztP\\nfake/pem/fa5QgbkBeqT4M3WxMEo79zdSneN+kY1T0iGmpyjy+ZhnkQ6exrI9q/B\\nAiEAx0MPjnWosvnPo3JLGv4Ufake/pem/w8PdPIlUqzRH/kCIQCYCV2k2S8Qh06c\\ntFlvN7HsJgQp46aM/f7FNZWobn1KNQIgT1We4vxrf17A0fWWe5e/6biQFPbap7XP\\nh8wdGg6ecJkCIA/EoOaw87WmItwTxFbJkvVn9/SUPLjQuvSfGxdt5ialAiBWKC3h\\nH2aPlTKO5Y7Fb1YTszIG7FbFGpiWDFlpeOn4VA==\\n-----END RSA PRIVATE KEY-----\",\"client_x509_cert_url\":\"https://www.googleapis.com/dont/bother/bots/becuase/this-is-a-fake-svc-acc@project-id.iam.gserviceaccount.com\",\"client_id\":\"123456789\",\"client_email\":\"this-is-a-fake-svc-acc@project-id.iam.gserviceaccount.com\",\"auth_uri\":\"https://accounts.google.com/o/oauth2/auth\",\"auth_provider_x509_cert_url\":\"https://www.googleapis.com/oauth2/v1/certs\"}",
+                      "eyJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsICJ0b2tlbl91cmkiOiAiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tL28vb2F1dGgyL3Rva2VuIiwgInByb2plY3RfaWQiOiJzb21lLWlkLW9mLWEtZmFrZS1wcm9qZWN0IiwgInByaXZhdGVfa2V5X2lkIjogIldIWS1hcmUteW91LXRyeWluZy10by1zdGVhbC10aGlzIiwgInByaXZhdGVfa2V5IjogIi0tLS0tQkVHSU4gUlNBIFBSSVZBVEUgS0VZLS0tLS1cbk1JSUJPQUlCQUFKQWZha2UvcGVtL2Zha2UvcGVtL1VVSmp0NC9HMFVzckgrbkRlRXpOdVRzSng5SlZndGw0ZjhcbmZha2UvcGVtL3R3NUNiRThQRE9BMXZMbzhjWlQxUjZZalFJREFRQUJBa0JpZXJiS1h1SnZqSVo1cmlkNlp6dFBcbmZha2UvcGVtL2ZhNVFnYmtCZXFUNE0zV3hNRW83OXpkU25lTitrWTFUMGlHbXB5ankrWmhua1E2ZXhySTlxL0JcbkFpRUF4ME1Qam5Xb3N2blBvM0pMR3Y0VWZha2UvcGVtL3c4UGRQSWxVcXpSSC9rQ0lRQ1lDVjJrMlM4UWgwNmNcbnRGbHZON0hzSmdRcDQ2YU0vZjdGTlpXb2JuMUtOUUlnVDFXZTR2eHJmMTdBMGZXV2U1ZS82YmlRRlBiYXA3WFBcbmg4d2RHZzZlY0prQ0lBL0VvT2F3ODdXbUl0d1R4RmJKa3ZWbjkvU1VQTGpRdXZTZkd4ZHQ1aWFsQWlCV0tDM2hcbkgyYVBsVEtPNVk3RmIxWVRzeklHN0ZiRkdwaVdERmxwZU9uNFZBPT1cbi0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tIiwgImNsaWVudF94NTA5X2NlcnRfdXJsIjogImh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL2RvbnQvYm90aGVyL2JvdHMvYmVjdWFzZS90aGlzLWlzLWEtZmFrZS1zdmMtYWNjQHByb2plY3QtaWQuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLCAiY2xpZW50X2lkIjogIjEyMzQ1Njc4OSIsICJjbGllbnRfZW1haWwiOiAidGhpcy1pcy1hLWZha2Utc3ZjLWFjY0Bwcm9qZWN0LWlkLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwgImF1dGhfdXJpIjogImh0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbS9vL29hdXRoMi9hdXRoIiwgImF1dGhfcHJvdmlkZXJfeDUwOV9jZXJ0X3VybCI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9vYXV0aDIvdjEvY2VydHMifQ==",
                     vault_role: "write-role",
                     exp: 900
                   },
@@ -349,7 +349,7 @@ defmodule PtolemyServerTest do
       gcp_svc_acc: svc
     } = creds
 
-    parsed_creds = Map.replace!(creds, :gcp_svc_acc, svc |> Jason.decode!())
+    parsed_creds = Map.replace!(creds, :gcp_svc_acc, svc |> Base.decode64!() |> Jason.decode!())
 
     state_both_exp_tokens =
       state
