@@ -27,6 +27,7 @@ Tested against Vault V0.11.5 but Ptolemy should support Vault V0.10.4 or later.
     - Google Cloud Platform (GCP)
 
 ## Installation
+
 Ptolemy is available on hex you can install it by following these steps:
 
 1. Add ptolemy to your `deps`
@@ -38,6 +39,13 @@ def deps do
 end
 ```
 2. Run `mix deps.get && mix deps.compile`
+
+## Example Usage
+
+### Simple example
+Simple app is a demo on how to leverage Ptolemy's dynamic loading capability. The configuration file in the project shall be served as an example for key values and PKI engine. More configuration specifications can be found in the *Configuration* section below.
+
+The example can be found in directory `examples/simple/`. Follow the `README.md` instructions to get started.
 
 ## Configuration
 

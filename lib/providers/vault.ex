@@ -71,7 +71,7 @@ defmodule Ptolemy.Providers.Vault do
     calling_args = [pid, engine_name, opts]
     {:ok, data} = apply(Ptolemy, :read, calling_args)
 
-    ttl_fetch_fn = [&fetch_lease/1, &fetch_max_ttl/1 ]
+    ttl_fetch_fn = [&fetch_max_ttl/1, &fetch_cert_ttl/1 ,&fetch_lease/1]
 
     load_result = Enum.reduce_while(ttl_fetch_fn, :error, fn ttl_fn, _ -> 
       case ttl_fn.(data) do
@@ -110,6 +110,17 @@ defmodule Ptolemy.Providers.Vault do
       {:ok, data}  
     else
       _ -> {:error, "Failed to fetch ttl for token"}
+    end
+  end
+
+  defp fetch_cert_ttl(data) do
+    with {:ok, data} <- Map.fetch(data, "data"),
+      {:ok, data} <- Map.fetch(data, "expiration") 
+    do
+      data = data - :os.system_time(:seconds)
+      {:ok, data}  
+    else
+      _ -> {:error, "Failed to fetch ttl for pki certificate"}
     end
   end
 
