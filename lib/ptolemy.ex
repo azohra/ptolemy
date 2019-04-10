@@ -9,31 +9,37 @@ defmodule Ptolemy do
     The available configuration option are as follows:
     - `:vault_url` ::string **(Required)** - The url of the remote vault server.
 
-    - `:auth_mode` ::string **(Required)** - The authentication method that ptolemy will try to do. As of `0.1.0`, `"GCP"` and `"approle"` are the only supported authentication methods.
     - `:engines` ::list - The engines list configuration, all your engines configuration should be store in here.
       - A key with an engine name will correspond to a map containing:
         - `:engine_type` ::atom - the engine type value should always be the same as the module that implements the engine, e.g. KV, GCP.
         - `:engine_path` ::string - The engine's path, always need to start with the name and end with a `/`.
-        - `:secrets` ::map - The path of each secrets you wish to use. Note each secret will be a map in Vault
+        - If you are using KV engine
+          - `:secrets` ::map - The path of each secret you wish to use. Note each secret will be a map in Vault
+        - If you are using PKI engine
+          - `:roles` ::map - The path of each role you wish to use. Roles will be used to generate certificates
 
-    - `:credentials` ::map **(Required)** - The sets of credentials that will be used to authenticate to vault
-      - If you are using the Approle auth method:
-        - `:role_id` ::string - The role ID to use to authenticate.
-        - `:secred_id` ::string - The secret ID to use to authenticate.
+    - `:auth` ::map - The server authorization configurations
+      - `:method` ::string **(Required)** - The authentication method you would like to use. We currently support `:GCP` and `:Approle`
 
-      - If you are using the GCP auth method:
-        - `:svc_acc` ::Based64 encoded string - The Google service account used to authenticate through IAP and/or vault.
+      - `:credentials` ::map **(Required)** - The sets of credentials that will be used to authenticate to vault. We recommend storing these secrets in the system
+      environment due to their sensitivity.
+        - If you are using the Approle auth method:
+          - `:role_id` ::string - The role ID to use to authenticate.
+          - `:secred_id` ::string - The secret ID to use to authenticate.
 
-       - In either case where you are using IAP you must provide `:target_audience` ::string - This is the client_id of the OAuth client
-      protecting the resource. Can be found in Security -> Identity-Aware-Proxy -> Select the IAP resource -> Edit OAuth client.
+        - If you are using the GCP auth method:
+          - `:svc_acc` ::Based64 encoded string - The Google service account used to authenticate through IAP and/or vault.
 
-    - `:opts` ::List - Optional list.
-      - `:iap_on` ::boolean - Sets whether the remote vautl server has IAP protection or not. If you are using GCP auth method you must provide
+         - In either case where you are using IAP you must provide `:target_audience` ::string - This is the client_id of the OAuth client
+        protecting the resource. Can be found in Security -> Identity-Aware-Proxy -> Select the IAP resource -> Edit OAuth client.
+
+      - `:opts` ::List - Optional list.
+        - `:iap_on` ::boolean - Sets whether the remote vautl server has IAP protection or not. If you are using GCP auth method you must provide
         a service account credential with both `Service Account Token Creator` and `Secured IAP User`. If you are using the Approle auth method
         you must provide `:svc_acc` and a `:target_audience` (client_id of the IAP protected resource) within the `:credential` block.
 
-      - `:exp` ::integer - The expiry of each access token (IAP - if enabled - and the vault token). The value has a default of 900 seconds(15 min), keep in mind
-      the maximum time allowed for any google tokens is 3600 (1 hour), for vault that is entirely depended on what the administrator sets (default is 15min).
+        - `:exp` ::integer - The expiry of each access token (IAP - if enabled - and the vault token). The value has a default of 900 seconds(15 min), keep in mind
+        the maximum time allowed for any google tokens is 3600 (1 hour), for vault that is entirely depended on what the administrator sets (default is 15min).
 
   ## Configuration Examples:
     - For an approle configuration
@@ -61,13 +67,15 @@ defmodule Ptolemy do
         }
       }
    ```
+   Note:  The engine path should be a string that ends with '/'
+          The secret path should start with '/'
   """
   require Logger
 
   alias Ptolemy.Server
   @doc """
   Entrypoint of ptolemy, this will start the process and store all necessary state for a connection to a remote vault server.
-  Please make sure the configuration for `server` exists in your confi file
+  Please make sure the configuration for `:server1` exists in your confi file
 
   ## Example
   ```elixir

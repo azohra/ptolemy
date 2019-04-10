@@ -5,17 +5,25 @@ defmodule Ptolemy.Providers.Vault do
   # Example
   Add to your configuration:
   ```elixir
-  alias Ptolemy.Providers.SystemEnv
+  alias Ptolemy.Providers.Vault
   config :ptolemy, loader: [
     env: [
-      {{:app_name, :config_key}, {Vault, "VAR_NAME"}}
+      {{:app_name, :config_key}, {Vault, [:engine1, [:secret1], ["key1", "key2"]]}}
     ]
   ]
   ```
   The `:app_name` and `:config_key` are added to reference the application environment
   key that will be set. The value can be accessed at any time with `Application.get_env/2`.
-  `"VAR_NAME"` is the name of the system environment variable that will be loaded on
-  application startup. Loaded values are all static and will never be updated during runtime.
+  
+  Vault is the module name of this provider is calling
+
+  The second element of the tuple is a list of arguments
+  1. The name of engine which this secret belongs to
+  2. This is another list which consists of the arguments required to call this engine's `read`
+     function. More details can be found in `ptolemy.ex`
+  3. This let you specify which part of the returned result should be stored in the application
+     environment keys. This support nested strcutures.
+  
 
   # Required Environment Variables
   None

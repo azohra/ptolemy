@@ -1,15 +1,15 @@
 # Ptolemy v0.2 Design Doc
-> ~~This document is designed to facilitate and grow with design discussions and is not yet complete.~~ This document has been finalized as the
+> ~~This document is designed to facilitate and grow with design discussions. This doc serves as explanations of how we designed v0.2~~ This document has been finalized as the
 > basis of Ptolemy v0.2. All content here may not be 100% accurate in the APIs due to possible implementation complications, but will be very
 > close and give an idea as to what the goals and final state of the rewrite will look like.
 
 ## Intro
 
-Ptolemy is now at a current stage where our thinking goes beyond the simple accessing and updating of secrets stored in a Vault server. For the idea of Application Managed secrets to fully be an accepted practice in the Elixir community, an effective and elegant solution will need to be built. We hope Ptolemy can fill this void. We envisioned Ptolemy to also provide capability of loading the secrets into your application environment and updating the secrets according to their ttl.
+Ptolemy is now at a current stage where our thinking goes beyond the simple accessing and updating of secrets stored in a Vault server. For the idea of Application Managed secrets to fully be an accepted practice in the Elixir community, an effective and elegant solution will need to be built. We hope Ptolemy can fill this void. We envisioned Ptolemy to provide capability of loading the secrets into your application environment and updating the secrets as they are about to expire.
 
-User has the choice of communicating directly with the CRUD interface of Ptolemy, which fetches secret from vault and allows manipulations on the secrets, these functions provide users with a great degree of flexibility. However, if you are looking for a convenient and performant way of accessing secrets, you are in luck. We offer a robust secret loading functionality. You can provide secrets that you would like to fetch from the Vault in config files, and Ptolemy would handle the task of loading secrets into your application environment like magic! It even takes care of refreshing the secret when they expire.
+User has the choice of communicating directly with the CRUD interface of Ptolemy, which fetches secret from vault and allows manipulations on the secrets, these functions provide users with a great degree of flexibility.
 
-We are trying to restructure Ptolemy in order to make it generic enough to support various secret engines, thus the folder structure would need a overhaul. Here is a proposal on how the repository should look like.
+However, if you are looking for a convenient and performant way of accessing secrets, you are in luck. We offer a robust secret loading functionality. You can provide secrets that you would like to fetch from the Vault in config files, and Ptolemy would handle the task of loading secrets into your application environment like magic! It even takes care of refreshing the secret when its ttl is up.
 
 ## Application Environment Management
 
@@ -24,28 +24,29 @@ The overall flow of the `Loader` module would be as follows as the application s
 The config of Ptolemy to support this functionality (along with already existing configs) would look something like:
 ```elixir
 # define how to auth with :server1
-config :ptolemy, Ptolemy,
-  server1: %{
-    vault_url: "http://localhost:8200",
-    auth_mode: "approle",
-    kv_engine: %{
-      kv_engine1: %{
-        engine_path: "secret/",
-        secrets: %{
-          ptolemy: "/ptolemy"
+config :ptolemy,
+  :vaults,
+    server1: %{
+      vault_url: "http://localhost:8200",
+      engines: [
+        kv_engine1: %{
+          engine_type: :KV,
+          engine_path: "secret/",
+          secrets: %{
+            test_secret: "/test_secret"
+          }
         }
+      ],
+      auth: %{
+        method: :Approle,
+        credentials: %{
+          role_id: "test",
+          secret_id: "test"
+        },
+        auto_renew: true,
+        opts: []
       }
-    },
-    credentials: %{
-      role_id: System.get_env("ROLE_ID"),
-      secret_id: System.get_env("SECRET_ID")
-    },
-    opts: [
-      iap_on: false,
-      exp: 6000
-    ]
-  }.
-  server2: %{...}
+    }
 
 # define :secret_1 to be provided by :server1 from the secret found on "SECRET_PATH"
 condif :ptolemy, env: [
@@ -58,7 +59,7 @@ condif :ptolemy, env: [
 ]
 ```
 
-> *Caveat:* The proposed configuration only supports top-level configuration values. The intention is to support complex configuration structures with a reference mechanism. As the project evolves we hope to discover a better format.
+The proposed configuration supports both top-level configuration values and nested configurations. For complex configuration structures, user would need to provide the outer structure and key with dummy values associated to it. Our loader would go in and fetch the key and update the contents
 
 The providers would implement the `Ptolemy.Provider` behavior. For example:
 ```elixir
@@ -68,7 +69,7 @@ defmodule MyApp.Provider do
   @impl
   def provide(loader_pid, args) do
     {value, ttl_ms} = MyApp.SomeApi.get_value(args)
-    send(loader_pid, {:expired, __MODULE__, args})
+    register_ttl(loader_pid, {__MODULE__, ttl})
     value
   end
 end
@@ -91,6 +92,8 @@ Considering factors above, we will be scrapping the Ptolemy.Supervisor module an
 
 
 ## Current Vault Integration Rework
+
+We are trying to restructure Ptolemy in order to make it generic enough to support various secret engines or even more providers.
 
 #### Current
 ```
@@ -121,8 +124,15 @@ Ptolemy/
 │   │   |   └── gcp.ex
 │   │   └── ...
 │   ├── providers
-│   │   ├── vault_provider.ex
-│   │   └── ...
+│   │   ├── vault.ex
+│   │   └── system_env.ex
+│   ├── auth
+│   │   ├── auth.ex
+│   │   └── approle
+│   │   |   └── approle.ex
+│   │   └── google
+│   │   |   ├── google_auth.ex
+│   │   |   └── gcp.ex
 │   ├── provider.ex
 │   ├── loader.ex
 │   ├── ptolemy.ex
@@ -132,16 +142,15 @@ Ptolemy/
 ```
 
 #### providers
-`providers/provider.ex` specifies behaviours that a provider should implement
+`provider.ex` specifies behaviours that a provider should implement and helper functions we provide by default
 
-`providers/vault_provider.ex` by default load secrets from vault
+`providers/vault.ex` loads secrets from vault and automatically register ttl
+
+`providers/system_env.ex` loads secrets from system environment, however, does not register ttl by default
 
 
 #### loaders
-`loader/loader.ex` will provide functions beahviours that loads secrets from provider to the application environment variables
-
-`loader/vault_loader.ex` will be implementation of the loader specific to vault
-
+`loader/loader.ex` will load secrets from provider to the application environment variables
 
 ##### ptolemy.ex
 `ptolemy.ex` will only contain a generic CRUD functions for users to interact, each function should take in the engine name as a parameter in order to pattern match with the correct support engine to call.  The underneath implementation of CRUD operations should lie within `lib/engines` folder. For example, `kv.ex` would still contain the communication functions, and `kv_server.ex` would be responsible for making the `ptolemy.ex` functions happen.
