@@ -20,7 +20,7 @@ defmodule Ptolemy.Server do
 
   When starting you may provide runtime configuration to Ptolemy by specifying a keyword list with the overiding values.
   """
-  @spec start_link(atom(), map(), keyword()) :: GenServer.on_start()
+  @spec start_link(atom() | String.t(), map(), keyword()) :: GenServer.on_start()
   def start_link(pid, server, opts \\ []) do
     config =
       Application.get_env(:ptolemy, :vaults)

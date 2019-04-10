@@ -75,7 +75,7 @@ defmodule Ptolemy do
   {:ok, #PID<0.228.0>}
   ```
   """
-  @spec start(atom, atom) :: {:ok, pid} | {:error, String.t()}
+  @spec start(atom | String.t(), atom) :: {:ok, pid} | {:error, String.t()}
   def start(name, config) do
     Server.start_link(name, config)
   end

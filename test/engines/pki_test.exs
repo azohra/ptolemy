@@ -69,13 +69,13 @@ defmodule PKITest do
       :ok
     end
   
-    test "create role" do
-      {:ok, server} = Ptolemy.start(:production, :server2)
+    test "create role", %{test: test_name} do
+      {:ok, server} = Ptolemy.start(test_name, :server2)
       assert {:ok, "PKI role created"} === Ptolemy.create(server, :pki_engine1, [:test_role1, %{allow_any_name: true}])
     end
   
-    test "get cert from role" do
-      {:ok, server} = Ptolemy.start(:production, :server2)
+    test "get cert from role", %{test: test_name} do
+      {:ok, server} = Ptolemy.start(test_name, :server2)
       {:ok, body} = Ptolemy.read(server, :pki_engine1, [:test_role1, "www.example.com"])
       assert body === %{
         "data" => %{
@@ -90,23 +90,23 @@ defmodule PKITest do
       }
     end
     
-    test "update role" do
-      {:ok, server} = Ptolemy.start(:production, :server2)
+    test "update role", %{test: test_name} do
+      {:ok, server} = Ptolemy.start(test_name, :server2)
       assert {:ok, "PKI role updated"} === Ptolemy.update(server, :pki_engine1, [:test_role1, %{allow_any_name: false}])
     end
     
-    test "delete cert" do
-      {:ok, server} = Ptolemy.start(:production, :server2)
+    test "delete cert", %{test: test_name} do
+      {:ok, server} = Ptolemy.start(test_name, :server2)
       assert {:ok, "PKI certificate revoked"} === Ptolemy.delete(server, :pki_engine1, [:certificate, "5b:65:31:58"])
     end
     
-    test "delete role" do
-      {:ok, server} = Ptolemy.start(:production, :server2)
+    test "delete role", %{test: test_name} do
+      {:ok, server} = Ptolemy.start(test_name, :server2)
       assert {:ok, "PKI role revoked"} === Ptolemy.delete(server, :pki_engine1, [:role, :test_role1])
     end
   
-    test "bang functions" do
-      {:ok, server} = Ptolemy.start(:production, :server2)
+    test "bang functions", %{test: test_name} do
+      {:ok, server} = Ptolemy.start(test_name, :server2)
       alias Ptolemy.Engines.PKI
       assert :ok === PKI.create!(server, :pki_engine1, :test_role1, %{allow_any_name: true})
       assert %{

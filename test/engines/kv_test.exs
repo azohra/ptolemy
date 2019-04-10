@@ -63,15 +63,15 @@ defmodule KVTest do
     :ok
   end
 
-  test "create secret" do
-    {:ok, server} = Ptolemy.start(:production, :server2)
+  test "create secret" , %{test: test_name} do
+    {:ok, server} = Ptolemy.start(test_name, :server2)
 
     assert {:ok, "KV secret created"} ===
              Ptolemy.create(server, :kv_engine1, [:test_secret, %{Hello: "World"}])
   end
 
-  test "read secret" do
-    {:ok, server} = Ptolemy.start(:production, :server2)
+  test "read secret", %{test: test_name} do
+    {:ok, server} = Ptolemy.start(test_name, :server2)
     {:ok, body} = Ptolemy.read(server, :kv_engine1, [:test_secret])
     assert body === %{
         "data" => %{
@@ -83,34 +83,34 @@ defmodule KVTest do
     assert body === %{"test" => "haha"}
   end
 
-  test "update secret" do
-    {:ok, server} = Ptolemy.start(:production, :server2)
+  test "update secret", %{test: test_name} do
+    {:ok, server} = Ptolemy.start(test_name, :server2)
 
     assert {:ok, "KV secret updated"} ===
              Ptolemy.update(server, :kv_engine1, [:test_secret, %{test: "haha"}])
   end
 
-  test "delete secret" do
-    {:ok, server} = Ptolemy.start(:production, :server2)
+  test "delete secret", %{test: test_name} do
+    {:ok, server} = Ptolemy.start(test_name, :server2)
     assert {:ok, "KV secret deleted"} === Ptolemy.delete(server, :kv_engine1, [:test_secret, [1]])
   end
 
-  test "destroy secret" do
-    {:ok, server} = Ptolemy.start(:production, :server2)
+  test "destroy secret", %{test: test_name} do
+    {:ok, server} = Ptolemy.start(test_name, :server2)
 
     assert {:ok, "KV secret destroyed"} ===
              Ptolemy.delete(server, :kv_engine1, [:test_secret, [1], true])
   end
 
-  test "engine config not found" do
-    {:ok, server} = Ptolemy.start(:production, :server2)
+  test "engine config not found", %{test: test_name} do
+    {:ok, server} = Ptolemy.start(test_name, :server2)
 
     assert {:ok, "KV secret destroyed"} ===
              Ptolemy.delete(server, :kv_engine1, [:test_secret, [1], true])
   end
 
-  test "bang functions" do
-    {:ok, server} = Ptolemy.start(:production, :server2)
+  test "bang functions", %{test: test_name} do
+    {:ok, server} = Ptolemy.start(test_name, :server2)
     alias Ptolemy.Engines.KV
     assert :ok === KV.create!(server, :kv_engine1, :test_secret, %{Hello: "World"})
     assert %{"test" => "haha"} = KV.read!(server, :kv_engine1, :test_secret, true)

@@ -163,8 +163,8 @@ defmodule Ptolemy.Engines.GCPTest do
            }
   end
 
-  test "Ptolemy.create roleset" do
-    {:ok, server} = Ptolemy.start(:production, :server2)
+  test "Ptolemy.create roleset", %{test: test_name} do
+    {:ok, server} = Ptolemy.start(test_name, :server2)
 
     assert {:ok, "Roleset implemented"} ===
              Ptolemy.create(server, :gcp_engine1, [@roleset_name, @roleset_config])
@@ -173,8 +173,8 @@ defmodule Ptolemy.Engines.GCPTest do
              Ptolemy.create(server, :gcp_engine1, [@roleset_name, @roleset_config_broken])
   end
 
-  test "Ptolemy.read secret" do
-    {:ok, server} = Ptolemy.start(:production, :server2)
+  test "Ptolemy.read secret", %{test: test_name} do
+    {:ok, server} = Ptolemy.start(test_name, :server2)
 
     assert {:ok, %{token: "shhh...", expires_at_seconds: 1_537_400_046, token_ttl: 3599}} ===
              Ptolemy.read(server, :gcp_engine1, [:access_token, @roleset_name])
@@ -193,8 +193,8 @@ defmodule Ptolemy.Engines.GCPTest do
              Ptolemy.read(server, :gcp_engine1, [:service_account_key, @roleset_name_broken])
   end
 
-  test "Ptolemy.update roleset" do
-    {:ok, server} = Ptolemy.start(:production, :server2)
+  test "Ptolemy.update roleset", %{test: test_name} do
+    {:ok, server} = Ptolemy.start(test_name, :server2)
 
     assert {:ok, "Roleset implemented"} ===
              Ptolemy.update(server, :gcp_engine1, [@roleset_name, @roleset_config])
@@ -203,8 +203,8 @@ defmodule Ptolemy.Engines.GCPTest do
              Ptolemy.update(server, :gcp_engine1, [@roleset_name, @roleset_config_broken])
   end
 
-  test "Ptolemy.delete (rotate) roleset" do
-    {:ok, server} = Ptolemy.start(:production, :server2)
+  test "Ptolemy.delete (rotate) roleset", %{test: test_name} do
+    {:ok, server} = Ptolemy.start(test_name, :server2)
 
     assert {:ok, "Rotated"} ===
              Ptolemy.delete(server, :gcp_engine1, [:service_account_key, @roleset_name])
@@ -219,8 +219,8 @@ defmodule Ptolemy.Engines.GCPTest do
              Ptolemy.delete(server, :gcp_engine1, [:access_token, @roleset_name_broken])
   end
 
-  test "read roleset configuration" do
-    {:ok, server} = Ptolemy.start(:production, :server2)
+  test "read roleset configuration", %{test: test_name} do
+    {:ok, server} = Ptolemy.start(test_name, :server2)
 
     assert @read_roleset_response["data"] ===
              GCP.read_roleset!(server, :gcp_engine1, @roleset_name)
@@ -232,8 +232,8 @@ defmodule Ptolemy.Engines.GCPTest do
     )
   end
 
-  test "CRUD bang! functions" do
-    {:ok, server} = Ptolemy.start(:production, :server2)
+  test "CRUD bang! functions", %{test: test_name} do
+    {:ok, server} = Ptolemy.start(test_name, :server2)
 
     assert :ok === GCP.create!(server, :gcp_engine1, @roleset_name, @roleset_config)
     assert :ok === GCP.update!(server, :gcp_engine1, @roleset_name, @roleset_config)
