@@ -1,6 +1,6 @@
 defmodule Ptolemy.Providers.SystemEnv do
   @moduledoc """
-  A module that provides system environment variables.
+  `Ptolemy.Providers.SystemEnv` provides from system environment variables.
 
   # Example
   Add to your configuration:

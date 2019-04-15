@@ -8,9 +8,10 @@ defmodule Ptolemy.Engines.GCP.Engine do
   alias Ptolemy.Engines.GCP
 
   @doc """
-  Submits a POST request to the client to create a roleset
+  Submits a POST request to the client to create a roleset.
   """
-  @spec create_roleset(Tesla.Client.t(), String.t(), GCP.roleset()) :: {:ok | :error, String.t()}
+  @spec create_roleset(Tesla.Client.t(), String.t(), GCP.roleset()) ::
+          {:ok, String.t()} | {:error, String.t()}
   def create_roleset(client, name, payload) do
     with {:ok, resp} <- Tesla.post(client, "roleset/#{name}", payload) do
       case {resp.status, resp.body} do
@@ -42,9 +43,9 @@ defmodule Ptolemy.Engines.GCP.Engine do
   end
 
   @doc """
-  Submits a POST request to the client to rotate a roleset account's email and Key ID
+  Submits a POST request to the client to rotate a roleset account's email and Key ID.
   """
-  @spec rotate_roleset(Tesla.Client.t(), String.t()) :: {:ok | :error, String.t()}
+  @spec rotate_roleset(Tesla.Client.t(), String.t()) :: {:ok, String.t()} | {:error, String.t()}
   def rotate_roleset(client, roleset_name) do
     with {:ok, resp} <- Tesla.post(client, "roleset/#{roleset_name}/rotate", %{}) do
       case {resp.status, resp.body} do
@@ -59,10 +60,12 @@ defmodule Ptolemy.Engines.GCP.Engine do
   end
 
   @doc """
-  Submits a POST request to the client to rotate a roleset account's Key ID. Only works on
-  `access_token` type rolesets.
+  Submits a POST request to the client to rotate a roleset account's Key ID.
+
+  Only works on `access_token` type rolesets.
   """
-  @spec rotate_roleset_key(Tesla.Client.t(), String.t()) :: {:ok | :error, String.t()}
+  @spec rotate_roleset_key(Tesla.Client.t(), String.t()) ::
+          {:ok, String.t()} | {:error, String.t()}
   def rotate_roleset_key(client, roleset_name) do
     with {:ok, resp} <- Tesla.post(client, "roleset/#{roleset_name}/rotate-key", %{}) do
       case {resp.status, resp.body} do

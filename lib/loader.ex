@@ -1,7 +1,8 @@
 defmodule Ptolemy.Loader do
   @moduledoc """
-  This is a highly opinionated Application Configuration solution. Instead of 
-  having compile-time configuration and secrets, or simple system environment variables
+  `Ptolemy.Loader` implements a highly opinionated Application Configuration solution.
+
+  Instead of having compile-time configuration and secrets, or simple system environment variables
   on application startup, this module provides infrastructure on loading configuration
   from anywhere, with the bonus support of dynamic configurations.
 
@@ -22,7 +23,7 @@ defmodule Ptolemy.Loader do
   > `Application.get_env(:app_name, :secret_key)`
 
   To start your application with the loader, simply add it as the *first process* under your
-  application supervision tree. 
+  application supervision tree.
 
   ```elixir
     # add to your child process list in application.ex or other top-level supervising process
@@ -32,10 +33,10 @@ defmodule Ptolemy.Loader do
     ]
   ```
 
-  This will populate your application's key/value store for 
+  This will populate your application's key/value store for
   all following processes. It is important to note that the one caveat to loading configuration
   this way is that the `Loader` will block the startup of the remainder of the supervision tree
-  until initial values have been loaded into the application. This will most likely lead to 
+  until initial values have been loaded into the application. This will most likely lead to
   slightly longer startup times, depending on the providers used. All updates the providers
   notify the loader of will be handled concurrently.
 
@@ -87,7 +88,7 @@ defmodule Ptolemy.Loader do
   # Performance Considerations
   The best practices implied by the purpose of `Ptolemy.Loader` is that `Application.get_env/2`
   should be called repeatedly at runtime whenever configuration dependent code is executed. This raises the question
-  of performance impacts on that dependent code from constantly calling a lookup function. As explored 
+  of performance impacts on that dependent code from constantly calling a lookup function. As explored
   in [this article](https://engineering.tripping.com/blazing-fast-elixir-configuration-475aca10011d),
   you may incur small costs on massively frequent invocations and/or large return values, however at the
   time of writing these docs, it is felt that this is an acceptable price to pay. If ever the case does arise where
@@ -97,8 +98,9 @@ defmodule Ptolemy.Loader do
   use GenServer
 
   @typedoc """
-  The target configuration to be updated by a provider. Targets are mapped to be later retrieved from 
-  `Application.get_env/2`.
+  The target configuration to be updated by a provider.
+
+  Targets are mapped to be later retrieved from `Application.get_env/2`.
   """
   @type config_target :: {atom, atom | list(atom)}
 
@@ -110,9 +112,10 @@ defmodule Ptolemy.Loader do
   @load_callback_name :load
 
   @doc """
-  Starts the Loader process. While still functioning as a typical `start_link/1` helper, this
-  implementation also contains blocking business logic to ensure subsequent processes can 
-  retrieve populated application state values.
+  Starts the Loader process.
+
+  While still functioning as a typical `start_link/1` helper, this implementation also contains blocking business
+  logic to ensure subsequent processes can retrieve populated application state values.
   """
   def start_link(config \\ Application.get_env(:ptolemy, :loader)) do
     case GenServer.start_link(__MODULE__, config) do
@@ -126,10 +129,12 @@ defmodule Ptolemy.Loader do
   end
 
   @doc """
-  Initializes the process's state. This process is a special case where the state will already
-  be built in the same process as the supervisor to intentionally delay other processes from 
-  starting when loading configuration.
+  Initializes the process's state.
+
+  This process is a special case where the state will already be built in the same process as the supervisor to
+  intentionally delay other processes from starting when loading configuration.
   """
+  @impl true
   def init(args) do
     {:ok, args}
   end
@@ -143,8 +148,7 @@ defmodule Ptolemy.Loader do
   end
 
   @doc """
-  Invokes a provider with a query and sets the result to the mapped application environment
-  target.
+  Invokes a provider with a query and sets the result to the mapped application environment target.
   """
   @spec load(config_target, provider_spec) :: :ok
   def load(config_target, provider_spec)
@@ -180,6 +184,7 @@ defmodule Ptolemy.Loader do
   end
 
   ####### impl
+  @impl true
   def handle_call(:startup, _from, config) do
     started_providers =
       config
@@ -198,10 +203,12 @@ defmodule Ptolemy.Loader do
     {:reply, :ok, config |> Keyword.put(:started, started_providers)}
   end
 
+  @impl true
   def handle_call(:config, _from, config) do
     {:reply, config, config}
   end
 
+  @impl true
   def handle_info({:expired, {module, module_args}}, config) do
     config
     |> Keyword.get(:env)

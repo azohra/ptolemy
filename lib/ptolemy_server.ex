@@ -20,15 +20,16 @@ defmodule Ptolemy.Server do
 
   When starting you may provide runtime configuration to Ptolemy by specifying a keyword list with the overiding values.
   """
-  @spec start_link(atom() | String.t(), map(), keyword()) :: GenServer.on_start()
-  def start_link(pid, server, opts \\ []) do
+  @spec start_link(atom() | String.t(), atom(), keyword()) ::
+          {:ok, pid()} | :ignore | {:error, any()}
+  def start_link(server_name, server_conf_name, opts \\ []) do
     config =
       Application.get_env(:ptolemy, :vaults)
-      |> Keyword.get(server)
+      |> Keyword.get(server_conf_name)
       |> override?(opts)
 
     with {:ok, []} <- validate(config) do
-      GenServer.start_link(__MODULE__, config, name: pid)
+      GenServer.start_link(__MODULE__, config, name: server_name)
     else
       {:error, missing} -> raise @validation_err <> "#{missing}"
     end
@@ -41,15 +42,15 @@ defmodule Ptolemy.Server do
   will also be returned as part of this list.
   """
   @spec fetch_credentials(atom()) :: nonempty_list(tuple()) | {:error, String.t()}
-  def fetch_credentials(pid) do
-    with {state, tokens} <- GenServer.call(pid, :fetch_creds) do
+  def fetch_credentials(server_name) do
+    with {state, tokens} <- GenServer.call(server_name, :fetch_creds) do
       case {state, tokens} do
         {:ok, tokens} ->
           tokens
 
         {:error, _} ->
-          with {:ok, _} <- GenServer.call(pid, :auth, 15000) do
-            {:ok, tokens} = GenServer.call(pid, :fetch_creds)
+          with {:ok, _} <- GenServer.call(server_name, :auth, 15000) do
+            {:ok, tokens} = GenServer.call(server_name, :fetch_creds)
             tokens
           else
             {:error, _msg} = err -> err
@@ -62,24 +63,24 @@ defmodule Ptolemy.Server do
   Set a key within a specified server's state.
   """
   @spec set_data(atom(), atom(), map()) :: :ok | {:error, String.t()}
-  def set_data(pid, key, payload) do
-    GenServer.call(pid, {:set, key, payload})
+  def set_data(server_name, key, payload) do
+    GenServer.call(server_name, {:set, key, payload})
   end
 
   @doc """
   Get a specific key within a ptolemy state.
   """
   @spec get_data(atom(), atom()) :: {:ok, any()} | {:error, String.t()}
-  def get_data(pid, key) do
-    GenServer.call(pid, {:fetch, key})
+  def get_data(server_name, key) do
+    GenServer.call(server_name, {:fetch, key})
   end
 
   @doc """
   Dumps entire state within a specified server.
   """
   @spec dump(atom()) :: {:ok, any()}
-  def dump(pid) do
-    GenServer.call(pid, :dump)
+  def dump(server_name) do
+    GenServer.call(server_name, :dump)
   end
 
   ##############################################################################################
@@ -141,7 +142,7 @@ defmodule Ptolemy.Server do
 
         case svc do
           :reuse -> opts
-          _ -> opts |> Keyword.replace!(:iap_svc_acc, svc |> Base.decode64!()|> Jason.decode!())
+          _ -> opts |> Keyword.replace!(:iap_svc_acc, svc |> Base.decode64!() |> Jason.decode!())
         end
     end
   end
@@ -299,7 +300,7 @@ defmodule Ptolemy.Server do
           |> Map.get(:auth)
           |> Map.get(:credentials)
           |> Map.get(:gcp_svc_acc)
-          |> Base.decode64!() 
+          |> Base.decode64!()
           |> Jason.decode!()
 
         _ ->

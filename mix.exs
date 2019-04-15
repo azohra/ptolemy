@@ -17,8 +17,7 @@ defmodule Ptolemy.MixProject do
         main: "README.md",
         logo: "assets/logo.svg",
         extras: [
-          "README.md": [filename: "README.md", title: "Ptolemy"],
-          "docs/v0-2_redesign.md": [filename: "v0-2_redesign.md", title: "v0.2 Docs Design"]
+          "README.md": [filename: "README.md", title: "Ptolemy"]
         ]
       ]
     ]
@@ -44,7 +43,7 @@ defmodule Ptolemy.MixProject do
   end
 
   defp description() do
-    "Application Environment Manager"
+    "Application Environment Manager, with support for Hashicorp's Vault and much more!"
   end
 
   defp package() do
