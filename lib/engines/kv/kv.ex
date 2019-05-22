@@ -31,7 +31,7 @@ defmodule Ptolemy.Engines.KV do
   @doc """
   Fetches all of a secret's keys and value via the `:kv_engine` configuration, errors out if an error occurs.
   """
-  @spec read!(atom(), atom(), atom(), boolean(), integer()) :: any()
+  @spec read!(atom(), atom(), atom(), boolean(), integer()) :: any() | no_return()
   def read!(server_name, engine_name, secret, silent \\ false, version \\ 0) do
     case read(server_name, engine_name, secret, silent, version) do
       {:error, msg} -> raise RuntimeError, message: msg
@@ -100,7 +100,7 @@ defmodule Ptolemy.Engines.KV do
   @doc """
   Updates an already existing secret via the `:kv_engine` configuration, errors out if an error occurs.
   """
-  @spec update!(atom(), atom(), atom(), map(), integer() | nil) :: :ok
+  @spec update!(atom(), atom(), atom(), map(), integer() | nil) :: :ok | no_return()
   def update!(server_name, engine_name, secret, payload, cas \\ nil) do
     case update(server_name, engine_name, secret, payload, cas) do
       {:error, msg} -> raise RuntimeError, message: msg
@@ -145,7 +145,7 @@ defmodule Ptolemy.Engines.KV do
   @doc """
   Creates a secret according to the path specified in the ":kv_engine" specification, errors out if an error occurs.
   """
-  @spec create!(atom(), atom(), atom(), map(), integer() | nil) :: :ok
+  @spec create!(atom(), atom(), atom(), map(), integer() | nil) :: :ok | no_return()
   def create!(server_name, engine_name, secret, payload, cas \\ nil) do
     case create(server_name, engine_name, secret, payload, cas) do
       {:error, msg} -> raise RuntimeError, message: msg
@@ -196,7 +196,7 @@ defmodule Ptolemy.Engines.KV do
   @doc """
   Deletes a secific version of a secret via the `:kv_engine` configuration, errors out if an errors occurs.
   """
-  @spec delete!(atom(), atom(), atom(), nonempty_list(integer()), boolean()) :: :ok
+  @spec delete!(atom(), atom(), atom(), nonempty_list(integer()), boolean()) :: :ok | no_return()
   def delete!(server_name, engine_name, secret, vers, destroy \\ false) do
     case delete(server_name, engine_name, secret, vers, destroy) do
       {:error, msg} -> raise RuntimeError, message: msg
@@ -237,7 +237,7 @@ defmodule Ptolemy.Engines.KV do
   @doc """
   Destroys a secific version of a secret via the `:kv_engine` configuration, errors out if an error occurs.
   """
-  @spec destroy!(atom(), atom(), String.t(), nonempty_list(integer())) :: :ok
+  @spec destroy!(atom(), atom(), String.t(), nonempty_list(integer())) :: :ok | no_return()
   def destroy!(server_name, engine_name, secret, vers) do
     case destroy(server_name, engine_name, secret, vers) do
       {:error, msg} -> raise RuntimeError, message: msg
