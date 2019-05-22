@@ -24,7 +24,6 @@ defmodule Ptolemy.Providers.Vault do
   3. This let you specify which part of the returned result should be stored in the application
      environment keys. This support nested strcutures.
 
-
   # Required Environment Variables
   None
   """
