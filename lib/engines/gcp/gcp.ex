@@ -29,7 +29,7 @@ defmodule Ptolemy.Engines.GCP do
   @doc """
   Creates a roleset account in the given engine, erroring out if an error occurs.
   """
-  @spec create!(atom(), atom(), String.t(), roleset) :: :ok
+  @spec create!(atom(), atom(), String.t(), roleset) :: :ok | no_return()
   def create!(server_name, engine_name, roleset_name, roleset_payload) do
     create(server_name, engine_name, roleset_name, roleset_payload)
     |> case do
@@ -41,7 +41,7 @@ defmodule Ptolemy.Engines.GCP do
   @doc """
   Generates an `access token`/`service account key` from the given roleset, erroring out if an error occurs.
   """
-  @spec read!(atom(), atom(), gcp_secret_type, String.t()) :: map()
+  @spec read!(atom(), atom(), gcp_secret_type, String.t()) :: map() | no_return()
   def read!(server_name, engine_name, secret_type, roleset_name) do
     read(server_name, engine_name, secret_type, roleset_name)
     |> case do
@@ -53,7 +53,7 @@ defmodule Ptolemy.Engines.GCP do
   @doc """
   Updates a roleset account given a new payload, erroring out if an error occurs.
   """
-  @spec update!(atom(), atom(), String.t(), roleset) :: :ok
+  @spec update!(atom(), atom(), String.t(), roleset) :: :ok | no_return()
   def update!(server_name, engine_name, roleset_name, roleset_payload) do
     update(server_name, engine_name, roleset_name, roleset_payload)
     |> case do
@@ -68,7 +68,7 @@ defmodule Ptolemy.Engines.GCP do
   See the documentation for `delete/4` for more information on the exact behaviour
   of rotating rolesets.
   """
-  @spec delete!(atom(), atom(), gcp_secret_type, String.t()) :: :ok
+  @spec delete!(atom(), atom(), gcp_secret_type, String.t()) :: :ok | no_return()
   def delete!(server_name, engine_name, secret_type, roleset_name) do
     delete(server_name, engine_name, secret_type, roleset_name)
     |> case do
@@ -82,7 +82,7 @@ defmodule Ptolemy.Engines.GCP do
 
   The response can be used for changing the bindings or scopes to then update the roleset.
   """
-  @spec read_roleset!(atom(), atom(), String.t()) :: roleset
+  @spec read_roleset!(atom(), atom(), String.t()) :: roleset | no_return()
   def read_roleset!(server_name, engine_name, roleset_name) do
     create_client(server_name, engine_name)
     |> Engine.read_roleset(roleset_name)
@@ -112,7 +112,7 @@ defmodule Ptolemy.Engines.GCP do
   end
 
   @doc """
-  Generates an `access token`/`service account key` from the given roleset
+  Generates an `access token`/`service account key` from the given roleset.
 
   ## Example
   ```elixir
