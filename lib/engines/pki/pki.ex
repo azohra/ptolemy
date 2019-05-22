@@ -10,7 +10,7 @@ defmodule Ptolemy.Engines.PKI do
   alias Ptolemy.Server
 
   @doc """
-  Create a role with a
+  Create a role with a role from the specification provided.
 
   Optional payload is provided if there is a need to overide other options.
   See https://www.vaultproject.io/api/secret/pki/index.html#create-update-role for options.
