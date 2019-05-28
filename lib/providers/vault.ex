@@ -135,7 +135,7 @@ defmodule Ptolemy.Providers.Vault do
 
   defp custom_get_in(data, [head | tail]) do
     case data[head] do
-      nil -> raise "#{head} key does not exist in #{inspect(data)}"
+      nil -> raise "#{head} key does not exist in the response body!}"
       data -> custom_get_in(data, tail)
     end
   end
