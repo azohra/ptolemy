@@ -43,14 +43,14 @@ defmodule Ptolemy.Server do
   """
   @spec fetch_credentials(atom()) :: nonempty_list(tuple()) | {:error, String.t()}
   def fetch_credentials(server_name) do
-    with {state, tokens} <- GenServer.call(server_name, :fetch_creds) do
+    with {state, tokens} <- GenServer.call(server_name, :fetch_creds, 15000) do
       case {state, tokens} do
         {:ok, tokens} ->
           tokens
 
         {:error, _} ->
           with {:ok, _} <- GenServer.call(server_name, :auth, 15000) do
-            {:ok, tokens} = GenServer.call(server_name, :fetch_creds)
+            {:ok, tokens} = GenServer.call(server_name, :fetch_creds, 15000)
             tokens
           else
             {:error, _msg} = err -> err

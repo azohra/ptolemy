@@ -120,7 +120,7 @@ defmodule Ptolemy.Loader do
   def start_link(config \\ Application.get_env(:ptolemy, :loader)) do
     case GenServer.start_link(__MODULE__, config) do
       {:ok, pid} = result ->
-        GenServer.call(pid, :startup)
+        GenServer.call(pid, :startup, 16000)
         result
 
       result ->
