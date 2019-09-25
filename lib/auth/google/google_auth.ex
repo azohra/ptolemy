@@ -14,15 +14,28 @@ defmodule Ptolemy.Auth.Google do
     "alg" => "RS256",
     "typ" => "JWT"
   }
-
   @doc """
   Generates a google API access token used to authenticate your request to google's api.
   """
-  @spec authenticate(:api, map(), String.t(), pos_integer()) ::
+  @spec authenticate(:api, map(), pos_integer()) ::
           {String.t(), String.t()} | {:error, String.t()}
   def authenticate(:api, creds, exp) do
     base = %{scope: @google_gcp_scope}
     gen_tok(creds, "access_token", base, exp)
+  end
+
+  @doc """
+  Generates a google API access token used to authenticate your request to google's api.
+
+  Available options are:
+    - :exp -> sets the expiry for the token, defaults to 3600
+    - :scopes -> google authorization scopes. defaults to iam auth scopes.
+  """
+  @spec authenticate(map(), keyword()) ::
+          {String.t(), String.t()} | {:error, String.t()}
+  def authenticate(creds, opt \\ []) do
+    base = %{scope: Keyword.get(opt, :scopes, @google_gcp_scope)}
+    gen_tok(creds, "access_token", base, Keyword.get(opt, :exp, 3600))
   end
 
   @doc """
