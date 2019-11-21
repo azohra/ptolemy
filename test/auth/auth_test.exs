@@ -177,9 +177,13 @@ defmodule Ptolemy.AuthTest do
   test "Vault authentication success via Kubernetes" do
     assert @result_NOIAP ==
              Ptolemy.Auth.authenticate(
-               :Kube,
+               :Kubernetes,
                @vurl,
-               %{kube_client_token: "test_token", vault_role: "test", cluster_name: "prod-bluenose"},
+               %{
+                 kube_client_token: "test_token",
+                 vault_role: "test",
+                 cluster_name: "prod-bluenose"
+               },
                []
              )
   end
