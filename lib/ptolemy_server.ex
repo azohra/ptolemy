@@ -289,6 +289,13 @@ defmodule Ptolemy.Server do
     end
   end
 
+  # Handling the case where hackney connection is not explicitly closed by Tesla
+  @impl true
+  def handle_info({:ssl_closed, opts}, state) do
+    Logger.info("SSL connection closed by hackney")
+    {:noreply, state} 
+  end
+
   @impl true
   def handle_info({:auto_renew_iap, opts}, state) do
     [vault_tok, {"Authorization", _bearer}] = Map.get(state, :tokens)

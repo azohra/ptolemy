@@ -14,7 +14,7 @@ defmodule Ptolemy.AuthTest do
     "project_id" => "some-id-of-a-fake-project",
     "private_key_id" => "WHY-are-you-trying-to-steal-this",
     "private_key" =>
-      "-----BEGIN RSA PRIVATE KEY-----\nMIIBOAIBAAJAfake/pem/fake/pem/UUJjt4/G0UsrH+nDeEzNuTsJx9JVgtl4f8\nfake/pem/tw5CbE8PDOA1vLo8cZT1R6YjQIDAQABAkBierbKXuJvjIZ5rid6ZztP\nfake/pem/fa5QgbkBeqT4M3WxMEo79zdSneN+kY1T0iGmpyjy+ZhnkQ6exrI9q/B\nAiEAx0MPjnWosvnPo3JLGv4Ufake/pem/w8PdPIlUqzRH/kCIQCYCV2k2S8Qh06c\ntFlvN7HsJgQp46aM/f7FNZWobn1KNQIgT1We4vxrf17A0fWWe5e/6biQFPbap7XP\nh8wdGg6ecJkCIA/EoOaw87WmItwTxFbJkvVn9/SUPLjQuvSfGxdt5ialAiBWKC3h\nH2aPlTKO5Y7Fb1YTszIG7FbFGpiWDFlpeOn4VA==\n-----END RSA PRIVATE KEY-----",
+      "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEAkqxESs7Ny7paZv6EgGpfLsiqd1wdcuC5EzVW6YvMYBczJHgu\nVed0Ez5eMjSYQraHdzfbCzHsRZw2+TjiEhLSdjCAzW2RY5G50W961X6B7pFWeRFH\nx05l9d9dFoFpNTL8tId1On6aPUyH+vypnt300uAgMB25gqgTlLw73O99E7/zp5cw\n4S4RmLS4KPlwJlPOjNwwN8ki1weaw3adNupEkQ/y8ZyyhxBO5kPmCztS7CCNIh+K\nhaUmZ3Lwwgk6ESFMKmKB49phgQlm3cYfi8uR0Y+qFYi5iHbSmViqIhfKWlYU+JnH\nB/cSaemh9Eq6L9bG8SxvV50aWw1PifAZPKL+uQIDAQABAoIBAG6La4U+TJkJwOzz\nUwY+JbLrBp+jS4aznIm/n9uxw72Afskzu8sxAKkoTnJkdYWCcKMH9A2B+OOWE1DO\n8IRSr1DoyYsK05NJ19Tjwp56FI+r9pKU1ZZ/nhUr3csCijrQTOn7Vf1aQgGFVs9x\n8p2MB+OPjHL3VEQHTYrCPBQOZCSnWKkfddGbRh51uJYqRcaMNeJuMFDrVeBH22ci\nbkh8ze+44cFy5AXnMRjk87PcG8uvkYvC1tN5caJ10r4d4T1Fn6QQPyGoFDgfw8sd\nkxGpbJ0ZcjQessPUaYZFDYS0egBLTncINKaxo0lylpgGGpaIReHo0iDo7fkRjFqD\nH9Bk8gECgYEA0I2Q+hN1mubbHmRo74t7nQHSvQIS1wkOc4Ll1cmwmkK5GB7Fmjar\n4RmhLLD/RkaZ2mQ0EL52+q/9qzcC+O4MPyUCdFSddU8WlLooM7tVmXDhjJ4QNHr0\nxVbda7CgsUvKGblyoXEUYQepEVvGCMTNaze3b88COdaKrV7vfOEXEGECgYEAtAq2\nrx9QKoTifStttIr0PZ2h6gvI8JQiaQGy59sgXE1JwV0n5dbz36pV5BCmYb/eV/aQ\n5dPob3eGk3Y6TbmuFZWqVlZNvIB1OI6vz6+ZZgXImlf8VbsdqfwImePcQJ5SWt4t\n0EaM5YxjnwWFCtQpCzv/hjc1ZJYNKarNju/FbVkCgYAWqRs0oQKpVyY98ikYxi4j\nTDxqvxvu85P3ZyS0Cxs+V7um7EkKTaB1cAR8R6slJqy29yZVH2zsJk1I2kxfYfZA\nsjPHEh6dzX8ln+iYXmWZq5NGZTJbkXShMKQUfHepbBPEocrb0d6mAGAVe8RT1ZaA\nbOhopLSYNkCRP/yDtC1+YQKBgQCWy55lIPn5EuHMatJw9C1LajrSF9rOPZRwlN6u\nuWbqSEWtMgQXyqjqPfXAln10w8pLrJWCGbHForvRyKVeslVveLJ5q8FiT8lefIwe\njHoT7GYvd+A+QgG/fPwLQMEaUkCyIQMIPf8GyEYsS+g5wKc75J3JYXZT8CXIL2oJ\n/SNDyQKBgQC1qyCjpVR5TtMlz+HgKj8CRsfY9b3CTzfHzEHOutbUG830Zq5FPMLV\nwwOoHH5XAeSAKiL6WvyCk7svTMCnMqzVnWrwZfvXcWIT38drQSPwmgTytGWgaUx9\nu0YOMmcL+cdNZA7zJHF0AcZUSI5oEiOHaYk26vujegfExEnmgX5TwQ==\n-----END RSA PRIVATE KEY-----\n",
     "client_email" => "this-is-a-fake-svc-acc@project-id.iam.gserviceaccount.com",
     "client_id" => "123456789",
     "auth_uri" => "https://accounts.google.com/o/oauth2/auth",
@@ -47,6 +47,25 @@ defmodule Ptolemy.AuthTest do
   setup do
     mock(fn
       %{method: :post, url: "#{@vurl}/v1/auth/approle/login"} ->
+        json(
+          %{
+            "auth" => %{
+              "renewable" => true,
+              "lease_duration" => 2_764_800,
+              "metadata" => %{},
+              "policies" => [
+                "default",
+                "dev-policy",
+                "test-policy"
+              ],
+              "accessor" => "5d7fb475-07cb-4060-c2de-1ca3fcbf0c56",
+              "client_token" => "98a4c7ab-FAKE-361b-ba0b-e307aacfd587"
+            }
+          },
+          status: 200
+        )
+
+      %{method: :post, url: "#{@vurl}/v1/auth/prod-bluenose/login"} ->
         json(
           %{
             "auth" => %{
@@ -151,6 +170,20 @@ defmodule Ptolemy.AuthTest do
                :GCP,
                @vurl,
                %{gcp_svc_acc: @gcp_svc1_with_vault_perm, vault_role: "test", exp: 3000},
+               []
+             )
+  end
+
+  test "Vault authentication success via Kubernetes" do
+    assert @result_NOIAP ==
+             Ptolemy.Auth.authenticate(
+               :Kubernetes,
+               @vurl,
+               %{
+                 kube_client_token: "test_token",
+                 vault_role: "test",
+                 cluster_name: "prod-bluenose"
+               },
                []
              )
   end
