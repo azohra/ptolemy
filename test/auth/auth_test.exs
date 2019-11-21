@@ -65,6 +65,25 @@ defmodule Ptolemy.AuthTest do
           status: 200
         )
 
+      %{method: :post, url: "#{@vurl}/v1/auth/prod-bluenose/login"} ->
+        json(
+          %{
+            "auth" => %{
+              "renewable" => true,
+              "lease_duration" => 2_764_800,
+              "metadata" => %{},
+              "policies" => [
+                "default",
+                "dev-policy",
+                "test-policy"
+              ],
+              "accessor" => "5d7fb475-07cb-4060-c2de-1ca3fcbf0c56",
+              "client_token" => "98a4c7ab-FAKE-361b-ba0b-e307aacfd587"
+            }
+          },
+          status: 200
+        )
+
       %{method: :post, url: "#{@vurl}/v1/auth/gcp/login"} ->
         json(
           %{
@@ -151,6 +170,16 @@ defmodule Ptolemy.AuthTest do
                :GCP,
                @vurl,
                %{gcp_svc_acc: @gcp_svc1_with_vault_perm, vault_role: "test", exp: 3000},
+               []
+             )
+  end
+
+  test "Vault authentication success via Kubernetes" do
+    assert @result_NOIAP ==
+             Ptolemy.Auth.authenticate(
+               :Kube,
+               @vurl,
+               %{kube_client_token: "test_token", vault_role: "test", cluster_name: "prod-bluenose"},
                []
              )
   end
