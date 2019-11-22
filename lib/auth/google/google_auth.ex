@@ -14,6 +14,7 @@ defmodule Ptolemy.Auth.Google do
     "alg" => "RS256",
     "typ" => "JWT"
   }
+
   @doc """
   Generates a google API access token used to authenticate your request to google's api.
   """
