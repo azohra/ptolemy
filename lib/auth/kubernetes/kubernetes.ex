@@ -4,13 +4,13 @@ defmodule Ptolemy.Auth.Kubernetes do
   """
   @behaviour Ptolemy.Auth
 
-  def authenticate(url, %{kube_client_token: client_key, vault_role: role, cluster_name: cname}, opt) do
+  def authenticate(url, %{kube_client_token: client_key, vault_role: role, cluster_name: cname}, headers, http_opts \\ []) do
     payload = %{
       role: "#{role}",
       jwt: "#{client_key}"
     }
 
-    Ptolemy.Auth.vault_auth_client(url, opt)
+    Ptolemy.Auth.vault_auth_client(url, headers, http_opts)
     |> Ptolemy.Auth.login("/auth/#{cname}/login", payload)
   end
 end

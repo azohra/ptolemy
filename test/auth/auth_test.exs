@@ -174,7 +174,7 @@ defmodule Ptolemy.AuthTest do
              )
   end
 
-  test "Vault authentication success via Kubernetes" do
+  test "Vault authentication success via Kubernetes using http_opts" do
     assert @result_NOIAP ==
              Ptolemy.Auth.authenticate(
                :Kubernetes,
@@ -184,7 +184,21 @@ defmodule Ptolemy.AuthTest do
                  vault_role: "test",
                  cluster_name: "prod-bluenose"
                },
-               []
+               http_opts: [adapter: [ssl_options: [cacertfile: "/opt/app/abc/test.pem"]]]
+             )
+  end
+
+  test "Vault authentication success via Kubernetes using headers" do
+    assert @result_NOIAP ==
+             Ptolemy.Auth.authenticate(
+               :Kubernetes,
+               @vurl,
+               %{
+                 kube_client_token: "test_token",
+                 vault_role: "test",
+                 cluster_name: "prod-bluenose"
+               },
+               headers: [adapter: [ssl_options: [cacertfile: "/opt/app/abc/test.pem"]]]
              )
   end
 

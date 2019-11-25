@@ -76,10 +76,31 @@ defmodule Ptolemy.Auth do
   Specifying a tuple of type {"Authorization", "Bearer ....."} will notify `Ptolemy.Auth.authenticate/4` to reuse the token to prevent
   exessive auhtnetication calls to IAP.
   """
-  @type iap_auth_opts ::
+  @type auth_opts ::
           []
           | [iap_svc_acc: map(), client_id: String.t(), exp: pos_integer()]
+          | [headers: list()]
+          | [http_opts: list()]
+          | [headers: list(), http_opts: list()]
+          | [headers: list(), iap_svc_acc: map(), client_id: String.t(), exp: pos_integer()]
+          | [http_opts: list(), iap_svc_acc: map(), client_id: String.t(), exp: pos_integer()]
+          | [
+              headers: list(),
+              http_opts: list(),
+              iap_svc_acc: map(),
+              client_id: String.t(),
+              exp: pos_integer()
+            ]
           | [iap_svc_acc: :reuse, client_id: String.t(), exp: pos_integer()]
+          | [headers: list(), iap_svc_acc: :reuse, client_id: String.t(), exp: pos_integer()]
+          | [http_opts: list(), iap_svc_acc: :reuse, client_id: String.t(), exp: pos_integer()]
+          | [
+              headers: list(),
+              http_opts: list(),
+              iap_svc_acc: :reuse,
+              client_id: String.t(),
+              exp: pos_integer()
+            ]
           | {String.t(), String.t()}
 
   @typedoc """
@@ -103,7 +124,7 @@ defmodule Ptolemy.Auth do
 
   Each modules representing a specific authentication method should implement this callback in its own module.
   """
-  @callback authenticate(endpoint :: String.t(), cred_data, iap_tok) ::
+  @callback authenticate(endpoint :: String.t(), cred_data, list(), list()) ::
               vault_auth_data | {:error, String.t()}
 
   @doc """
@@ -111,42 +132,71 @@ defmodule Ptolemy.Auth do
 
   Currently the only supported options deals with IAP.
 
-  Note Specifying an empty list or a tuple to this function under `iap_auth_opts` will *NOT* return an IAP token and IAP credentials metadata.
+  Note Specifying an empty list or a tuple to this function under `auth_opts` will *NOT* return an IAP token and IAP credentials metadata.
   """
-  @spec authenticate(auth_method, String.t(), cred_data, iap_auth_opts) ::
+  @spec authenticate(auth_method, String.t(), cred_data, auth_opts) ::
           vault_auth_data
           | %{vault: vault_auth_data, iap: iap_auth_data}
           | {:error, String.t()}
 
-  def authenticate(method, url, credentials, [] = opts) do
-    auth(method, url, credentials, opts)
-  end
+  def authenticate(method, url, credentials, opts) do
+    opts =
+      case is_tuple(opts),
+        do:
+          (
+            true -> [headers: [opts]]
+            false -> opts
+          )
 
-  # Re-use IAP Bearer tokens
-  def authenticate(method, url, credentials, {"Authorization", _bearer} = opts) do
-    auth(method, url, credentials, [opts])
+    split_opts = Keyword.split(opts, [:iap_svc_acc, :client_id, :exp])
+    iap_opts = elem(split_opts, 0)
+    headers = Keyword.get(elem(split_opts, 1), :headers, [])
+    http_opts = Keyword.get(elem(split_opts, 1), :http_opts, [])
+
+    case length(iap_opts) == 3 do
+      true -> iap_authenticate(method, url, credentials, iap_opts, headers, http_opts)
+      false -> opts_authenticate(method, url, credentials, headers, http_opts)
+    end
   end
 
   # IAP is enabled and has a seperate service account.
-  def authenticate(method, url, credentials, iap_svc_acc: svc, client_id: cid, exp: exp)
-      when is_map(svc) do
+  defp iap_authenticate(
+         method,
+         url,
+         credentials,
+         [iap_svc_acc: svc, client_id: cid, exp: exp],
+         headers,
+         http_opts
+       )
+       when is_map(svc) do
     iap_tok = Ptolemy.Auth.Google.authenticate(:iap, svc, cid, exp)
-    vault_tok = auth(method, url, credentials, [iap_tok])
+    vault_tok = auth(method, url, credentials, [iap_tok] ++ headers, http_opts)
 
     %{vault: vault_tok, iap: %{token: iap_tok}}
   end
 
   # IAP is enabled with instruction to re-use `credentials` as the IAP service account
-  def authenticate(method, url, credentials, iap_svc_acc: :reuse, client_id: cid, exp: exp) do
+  defp iap_authenticate(
+         method,
+         url,
+         credentials,
+         [iap_svc_acc: :reuse, client_id: cid, exp: exp],
+         headers,
+         http_opts
+       ) do
     iap_tok = Ptolemy.Auth.Google.authenticate(:iap, credentials[:gcp_svc_acc], cid, exp)
-    vault_tok = auth(method, url, credentials, [iap_tok])
+    vault_tok = auth(method, url, credentials, [iap_tok] ++ headers, http_opts)
 
     %{vault: vault_tok, iap: %{token: iap_tok}}
   end
 
-  defp auth(method, url, credentials, opts) do
+  def opts_authenticate(method, url, credentials, headers, http_opts) do
+    auth(method, url, credentials, headers, http_opts)
+  end
+
+  defp auth(method, url, credentials, headers, http_opts) do
     auth_type = Module.concat(Ptolemy.Auth, method)
-    auth_type.authenticate(url, credentials, opts)
+    auth_type.authenticate(url, credentials, headers, http_opts)
   end
 
   @doc """
@@ -171,11 +221,12 @@ defmodule Ptolemy.Auth do
   @doc """
   Creates a `%Tesla.Client{}` pointing to a remote vault server.
   """
-  @spec vault_auth_client(String.t(), iap_auth_opts) :: %Tesla.Client{}
-  def vault_auth_client(url, iap_tok) do
+  @spec vault_auth_client(String.t(), list(), list()) :: %Tesla.Client{}
+  def vault_auth_client(url, headers, opts) do
     Tesla.client([
       {Tesla.Middleware.BaseUrl, "#{url}/v1"},
-      {Tesla.Middleware.Headers, iap_tok},
+      {Tesla.Middleware.Headers, headers},
+      {Tesla.Middleware.Opts, opts},
       {Tesla.Middleware.JSON, []}
     ])
   end

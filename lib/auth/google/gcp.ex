@@ -5,7 +5,7 @@ defmodule Ptolemy.Auth.GCP do
   alias Ptolemy.Auth.Google, as: Gauth
   @behaviour Ptolemy.Auth
 
-  def authenticate(url, %{gcp_svc_acc: svc, vault_role: role, exp: exp}, opt) do
+  def authenticate(url, %{gcp_svc_acc: svc, vault_role: role, exp: exp}, headers, http_opts) do
     jwt =
       %{
         sub: svc["client_email"],
@@ -20,7 +20,7 @@ defmodule Ptolemy.Auth.GCP do
       jwt: "#{jwt}"
     }
 
-    Ptolemy.Auth.vault_auth_client(url, opt)
+    Ptolemy.Auth.vault_auth_client(url, headers, http_opts)
     |> Ptolemy.Auth.login("/auth/gcp/login", payload)
   end
 end

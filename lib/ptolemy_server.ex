@@ -291,7 +291,7 @@ defmodule Ptolemy.Server do
 
   # Handling the case where hackney connection is not explicitly closed by Tesla
   @impl true
-  def handle_info({:ssl_closed, opts}, state) do
+  def handle_info({:ssl_closed, _}, state) do
     Logger.info("SSL connection closed by hackney")
     {:noreply, state} 
   end
