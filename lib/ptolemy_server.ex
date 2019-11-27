@@ -138,9 +138,10 @@ defmodule Ptolemy.Server do
         []
 
       _ ->
-        svc = Keyword.get(opts, :iap_svc_acc)
+        svc = Keyword.get(opts, :iap_svc_acc, false)
 
         case svc do
+          false -> opts
           :reuse -> opts
           _ -> opts |> Keyword.replace!(:iap_svc_acc, svc |> Base.decode64!() |> Jason.decode!())
         end
@@ -205,7 +206,14 @@ defmodule Ptolemy.Server do
             Process.send_after(self(), {:auto_renew_iap, opts}, (opts[:exp] - 5) * 1000)
           else
             Process.send_after(self(), {:purge, :vault}, ttl * 1000)
-            Process.send_after(self(), {:purge, :iap}, opts[:exp] * 1000)
+
+            case Keyword.has_key?(opts, :exp) do
+              true ->
+                Process.send_after(self(), {:purge, :iap}, opts[:exp] * 1000)
+
+              false ->
+                nil
+            end
           end
 
           {:reply, {:ok, res}, Map.put(state, :tokens, access_token)}
@@ -293,7 +301,7 @@ defmodule Ptolemy.Server do
   @impl true
   def handle_info({:ssl_closed, _}, state) do
     Logger.info("SSL connection closed by hackney")
-    {:noreply, state} 
+    {:noreply, state}
   end
 
   @impl true
