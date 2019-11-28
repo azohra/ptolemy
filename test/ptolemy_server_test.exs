@@ -194,7 +194,7 @@ defmodule PtolemyServerTest do
               Map.put(state, :tokens, [
                 {"X-Vault-Token", "98a4c7ab-FAKE-361b-ba0b-e307aacfd587"},
                 {"Authorization", "Bearer 98a4c7ab98a4c7ab98a4c7ab"}
-              ])}
+                ]) |> Map.put(:http_opts, [])}
 
     alt_state = Map.put(state, :auth, non_renewed_approle_auth)
 
@@ -212,7 +212,7 @@ defmodule PtolemyServerTest do
               Map.put(alt_state, :tokens, [
                 {"X-Vault-Token", "98a4c7ab-FAKE-361b-ba0b-e307aacfd587"},
                 {"Authorization", "Bearer 98a4c7ab98a4c7ab98a4c7ab"}
-              ])}
+              ]) |> Map.put(:http_opts, [])}
   end
 
   test "approle handle_call :auth" do
@@ -234,7 +234,7 @@ defmodule PtolemyServerTest do
                  renewable: true,
                  token: {"X-Vault-Token", "98a4c7ab-FAKE-361b-ba0b-e307aacfd587"}
                }},
-              Map.put(state, :tokens, [{"X-Vault-Token", "98a4c7ab-FAKE-361b-ba0b-e307aacfd587"}])}
+              Map.put(state, :tokens, [{"X-Vault-Token", "98a4c7ab-FAKE-361b-ba0b-e307aacfd587"}]) |> Map.put(:http_opts, [])}
 
     alt_state = Map.put(state, :auth, non_renewed_approle_auth)
 
@@ -248,7 +248,7 @@ defmodule PtolemyServerTest do
                }},
               Map.put(alt_state, :tokens, [
                 {"X-Vault-Token", "98a4c7ab-FAKE-361b-ba0b-e307aacfd587"}
-              ])}
+              ]) |> Map.put(:http_opts, [])}
   end
 
   test "purge" do
@@ -326,6 +326,7 @@ defmodule PtolemyServerTest do
     state_new_token =
       state
       |> Map.put(:tokens, [{"X-Vault-Token", "98a4c7ab-FAKE-361b-ba0b-e307aacfd587"}])
+      |> Map.put(:http_opts, [])
 
     assert Server.handle_info({:auto_renew_vault, mode, url, creds, opts}, state_exp_token) ===
              {:noreply, state_new_token}
@@ -364,6 +365,7 @@ defmodule PtolemyServerTest do
         {"X-Vault-Token", "98a4c7ab-FAKE-361b-ba0b-e307aacfd587"},
         {"Authorization", "Bearer 98a4c7ab98a4c7ab98a4c7ab"}
       ])
+      |> Map.put(:http_opts, [])
 
     assert Server.handle_info(
              {:auto_renew_vault, mode, url, parsed_creds, opts},

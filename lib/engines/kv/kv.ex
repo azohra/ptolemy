@@ -263,11 +263,13 @@ defmodule Ptolemy.Engines.KV do
   # Tesla client function
   defp create_client(server_name) do
     creds = Server.fetch_credentials(server_name)
+    http_opts = Server.get_data(server_name, :http_opts)
     {:ok, url} = Server.get_data(server_name, :vault_url)
 
     Tesla.client([
       {Tesla.Middleware.BaseUrl, "#{url}/v1"},
       {Tesla.Middleware.Headers, creds},
+      {Tesla.Middleware.Opts, http_opts},
       {Tesla.Middleware.JSON, []}
     ])
   end
