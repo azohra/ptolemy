@@ -159,6 +159,9 @@ defmodule Ptolemy.Server do
 
       %{secret_id: _id, role_id: _rid} = parsed ->
         {:ok, parsed}
+      
+      %{kube_client_token: _, vault_role: _, cluster_name: _} = parsed ->
+        {:ok, parsed}
 
       _ ->
         {:error, "Unsupported credentials format"}
@@ -206,17 +209,10 @@ defmodule Ptolemy.Server do
             Process.send_after(self(), {:auto_renew_iap, opts}, (opts[:exp] - 5) * 1000)
           else
             Process.send_after(self(), {:purge, :vault}, ttl * 1000)
-
-            case Keyword.has_key?(opts, :exp) do
-              true ->
-                Process.send_after(self(), {:purge, :iap}, opts[:exp] * 1000)
-
-              false ->
-                nil
-            end
+            Process.send_after(self(), {:purge, :iap}, opts[:exp] * 1000)
           end
 
-          {:reply, {:ok, res}, Map.put(state, :tokens, access_token)}
+          {:reply, {:ok, res}, state |> Map.put(:tokens, access_token) |> Map.put(:http_opts, opts |> Keyword.get(:http_opts, []))}
 
         %{token: token, renewable: renewable, lease_duration: ttl} = res ->
           access_token = [token]
@@ -231,7 +227,7 @@ defmodule Ptolemy.Server do
             Process.send_after(self(), {:purge, :all}, ttl * 1000)
           end
 
-          {:reply, {:ok, res}, Map.put(state, :tokens, access_token)}
+          {:reply, {:ok, res}, state |> Map.put(:tokens, access_token) |> Map.put(:http_opts, opts |> Keyword.get(:http_opts, []))}
 
         {:error, msg} ->
           {:reply, {:error, msg}, state}
@@ -281,19 +277,23 @@ defmodule Ptolemy.Server do
     case {op, length(toks)} do
       {:all, _} ->
         {_, newstate} = Map.pop(state, :tokens)
+        {_, newstate} = Map.pop(newstate, :http_opts)
         {:noreply, newstate}
 
       {:vault, 1} ->
         {_, newstate} = Map.pop(state, :tokens)
+        {_, newstate} = Map.pop(newstate, :http_opts)
         {:noreply, newstate}
 
       {:vault, 2} ->
         [{"X-Vault-Token", _bearer}, token] = toks
-        {:noreply, Map.put(state, :tokens, [token])}
+        {_, newstate} = Map.pop(state, :http_opts)
+        {:noreply, Map.put(newstate, :tokens, [token])}
 
       {:iap, 2} ->
         [token, {"Authorization", _bearer}] = toks
-        {:noreply, Map.put(state, :tokens, [token])}
+        {_, newstate} = Map.pop(state, :http_opts)
+        {:noreply, Map.put(newstate, :tokens, [token])}
     end
   end
 
@@ -349,7 +349,7 @@ defmodule Ptolemy.Server do
           Process.send_after(self(), {:purge, :vault}, ttl * 1000)
         end
 
-        {:noreply, Map.put(state, :tokens, [token])}
+        {:noreply, state |> Map.put(:tokens, [token]) |>  Map.put(:http_opts, opts |> Keyword.get(:http_opts, []))}
 
       2 ->
         [{"X-Vault-Token", _bearer}, bearer] = toks
@@ -369,7 +369,7 @@ defmodule Ptolemy.Server do
           Process.send_after(self(), {:purge, :vault}, ttl * 1000)
         end
 
-        {:noreply, Map.put(state, :tokens, [token, bearer])}
+        {:noreply, state |> Map.put(:tokens, [token, bearer]) |> Map.put(:http_opts, opts |> Keyword.get(:http_opts, []))}
     end
   end
 

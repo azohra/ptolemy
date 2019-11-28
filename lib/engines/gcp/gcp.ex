@@ -240,6 +240,7 @@ defmodule Ptolemy.Engines.GCP do
 
     {:ok, url} = Server.get_data(server_name, :vault_url)
     {:ok, engines} = Server.get_data(server_name, :engines)
+    {:ok, http_opts} = Server.get_data(server_name, :http_opts)
 
     engine_path =
       engines
@@ -249,7 +250,7 @@ defmodule Ptolemy.Engines.GCP do
     adapter =
       {Tesla.Adapter.Hackney, [ssl_options: [{:versions, [:"tlsv1.2"]}], recv_timeout: 10_000]}
 
-    middleware = client_middleware(Mix.env(), url, engine_path, creds)
+    middleware = client_middleware(Mix.env(), url, engine_path, creds, http_opts)
 
     if Mix.env() == :test do
       Tesla.client(middleware)
@@ -258,7 +259,7 @@ defmodule Ptolemy.Engines.GCP do
     end
   end
 
-  defp client_middleware(:test, base_url, engine_path, creds) do
+  defp client_middleware(:test, base_url, engine_path, creds, opts) do
     [
       {Tesla.Middleware.BaseUrl, "#{base_url}/v1/#{engine_path}"},
       {Tesla.Middleware.Headers, creds},
@@ -266,10 +267,11 @@ defmodule Ptolemy.Engines.GCP do
     ]
   end
 
-  defp client_middleware(_env, base_url, engine_path, creds) do
+  defp client_middleware(_env, base_url, engine_path, creds, opts) do
     [
       {Tesla.Middleware.BaseUrl, "#{base_url}/v1/#{engine_path}"},
       {Tesla.Middleware.Headers, creds},
+      {Tesla.Middleware.Opts, opts},
       {Tesla.Middleware.Timeout, timeout: 10_000},
       {Tesla.Middleware.JSON, []}
     ]
