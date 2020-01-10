@@ -2,7 +2,6 @@ defmodule Ptolemy.Auth.Google do
   @moduledoc """
   `Ptolemy.Auth.Google` provides authentication functionality for Google's public APIs.
   """
-  import Joken
   require Logger
 
   @google_auth_url "https://www.googleapis.com"
@@ -10,10 +9,6 @@ defmodule Ptolemy.Auth.Google do
   @google_gcp_scope "https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/iam"
   @google_aud "https://www.googleapis.com/oauth2/v4/token"
   @google_grant_type "urn:ietf:params:oauth:grant-type:jwt-bearer"
-  @google_jwt_header %{
-    "alg" => "RS256",
-    "typ" => "JWT"
-  }
 
   @doc """
   Generates a google API access token used to authenticate your request to google's api.
@@ -82,18 +77,18 @@ defmodule Ptolemy.Auth.Google do
   # Creates google specific JWT
   defp create_jwt(svc, base_claim, time) do
     iss = svc["client_email"]
-    signer = svc["private_key"] |> JOSE.JWK.from_pem() |> rs256()
+    key = svc["private_key"] |> JOSE.JWK.from_pem()
 
-    token()
-    |> with_header_args(@google_jwt_header)
-    # need to override the override (T.T) +/- cpu offset
-    |> with_claim_generator("exp", fn -> :os.system_time(:seconds) + time end)
-    |> with_claims(base_claim)
-    |> with_aud(@google_aud)
-    |> with_iss(iss)
-    |> with_signer(signer)
-    |> sign()
-    |> get_compact()
+    signer = Joken.Signer.create("RS256", key)
+
+    claims = base_claim
+    |> Map.put("exp", :os.system_time(:seconds) + time)
+    |> Map.put("aud", @google_aud)
+    |> Map.put("iss", iss)
+
+    with {:ok, token} <- Joken.Signer.sign(claims, signer) do
+      token
+    end
   end
 
   # Helper func to generate a signed jwt used to submit to google's api.

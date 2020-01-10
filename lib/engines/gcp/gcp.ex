@@ -259,7 +259,7 @@ defmodule Ptolemy.Engines.GCP do
     end
   end
 
-  defp client_middleware(:test, base_url, engine_path, creds, opts) do
+  defp client_middleware(:test, base_url, engine_path, creds, _opts) do
     [
       {Tesla.Middleware.BaseUrl, "#{base_url}/v1/#{engine_path}"},
       {Tesla.Middleware.Headers, creds},

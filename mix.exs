@@ -34,7 +34,7 @@ defmodule Ptolemy.MixProject do
   defp deps do
     [
       {:tesla, "~> 1.2.1"},
-      {:joken, "~> 1.5"},
+      {:joken, "~> 2.0-rc3"},
       {:hackney, "~> 1.6"},
       {:jason, ">= 1.0.0"},
       {:poison, "~> 3.1"},
