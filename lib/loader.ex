@@ -121,6 +121,7 @@ defmodule Ptolemy.Loader do
     case GenServer.start_link(__MODULE__, config) do
       {:ok, pid} = result ->
         GenServer.call(pid, :startup, 16000)
+        Ptolemy.Cache.Cache.clear_cache()
         result
 
       result ->
