@@ -121,7 +121,7 @@ defmodule Ptolemy.Loader do
     case GenServer.start_link(__MODULE__, config) do
       {:ok, pid} = result ->
         GenServer.call(pid, :startup, 16000)
-        Ptolemy.Cache.Cache.clear_cache()
+        Ptolemy.Cache.clear_cache()
         result
 
       result ->
@@ -184,6 +184,14 @@ defmodule Ptolemy.Loader do
     end
   end
 
+  def register_reload(loader, module, module_args, ttl_in_milliseconds) do
+    Process.send_after(
+      loader,
+      {:expired, {module, module_args}},
+      ttl_in_milliseconds
+    )
+  end
+
   ####### impl
   @impl true
   def handle_call(:startup, _from, config) do
@@ -211,6 +219,8 @@ defmodule Ptolemy.Loader do
 
   @impl true
   def handle_info({:expired, {module, module_args}}, config) do
+    Ptolemy.Cache.clear_cache()
+
     config
     |> Keyword.get(:env)
     |> Enum.find(fn

@@ -5,7 +5,7 @@ defmodule Ptolemy.Engines.KV.Engine do
 
   require Logger
 
-  alias Ptolemy.Cache.Cache
+  alias Ptolemy.Cache
 
   @doc """
   Reads a secret from a remote vault server using Vault's KV engine.

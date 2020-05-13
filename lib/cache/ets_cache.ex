@@ -1,4 +1,5 @@
-defmodule Ptolemy.Cache.Cache do
+defmodule Ptolemy.Cache.ETSCache do
+  @behaviour Ptolemy.Cache.CacheBehaviour
   @cache_name __MODULE__
 
   @spec create_table :: atom
@@ -19,6 +20,7 @@ defmodule Ptolemy.Cache.Cache do
     end
   end
 
+  @spec clear_cache :: true
   def clear_cache() do
     :ets.delete_all_objects(@cache_name)
   end

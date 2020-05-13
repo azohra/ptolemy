@@ -19,7 +19,8 @@ defmodule Ptolemy.MixProject do
         extras: [
           "README.md": [filename: "README.md", title: "Ptolemy"]
         ]
-      ]
+      ],
+      elixirc_paths: elixirc_paths(Mix.env),
     ]
   end
 
@@ -38,6 +39,7 @@ defmodule Ptolemy.MixProject do
       {:hackney, "~> 1.6"},
       {:jason, ">= 1.0.0"},
       {:poison, "~> 3.1"},
+      {:mox, "~> 0.5.1"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false}
     ]
   end
@@ -54,4 +56,7 @@ defmodule Ptolemy.MixProject do
       links: %{"GitHub" => "https://github.com/azohra/ptolemy"}
     ]
   end
+
+  defp elixirc_paths(:test), do: ["test/support", "lib"]
+  defp elixirc_paths(_),     do: ["lib"]
 end

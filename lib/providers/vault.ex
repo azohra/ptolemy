@@ -80,7 +80,6 @@ defmodule Ptolemy.Providers.Vault do
         case ttl_fn.(data) do
           {:ok, ttl} ->
             if ttl > 0 do
-              Ptolemy.Cache.CacheServer.set_cache_ttl(ttl, :seconds)
               register_ttl(loader_pid, var_args, ttl, :seconds)
             end
 

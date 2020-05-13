@@ -2,6 +2,7 @@ defmodule Ptolemy.Providers.VaultTest do
   use ExUnit.Case, async: false
 
   import Tesla.Mock
+  import Mox
 
   alias Ptolemy.Loader
 
@@ -46,8 +47,12 @@ defmodule Ptolemy.Providers.VaultTest do
     :ok
   end
 
+  setup :set_mox_global
+  setup :setup_mock
+  setup :verify_on_exit!
+
   test "can load a vault value", %{test: test_name} do
-    {:ok, _loader} = 
+    {:ok, _loader} =
       Loader.start_link(
           env: [
               {{test_name, :loaded_value},
@@ -60,7 +65,7 @@ defmodule Ptolemy.Providers.VaultTest do
   end
 
   test "can load value and grab key", %{test: test_name} do
-    {:ok, _loader} = 
+    {:ok, _loader} =
       Loader.start_link(
           env: [
               {{test_name, :loaded_value},
@@ -68,5 +73,14 @@ defmodule Ptolemy.Providers.VaultTest do
           ]
       )
       assert Application.get_env(test_name, :loaded_value) === "haha"
+  end
+
+  defp setup_mock(_context) do
+    CacheMock
+    |> expect(:get, fn(_key) -> :not_found end)
+    |> expect(:put, fn(_key, _value) -> true end)
+    |> expect(:clear_cache, fn -> true end)
+
+    :ok
   end
 end
