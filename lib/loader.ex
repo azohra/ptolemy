@@ -1,6 +1,7 @@
 defmodule Ptolemy.Loader do
   @moduledoc """
   `Ptolemy.Loader` implements a highly opinionated Application Configuration solution.
+  The loader is meant to be started via `Ptolemy.LoaderSupervisor`.
 
   Instead of having compile-time configuration and secrets, or simple system environment variables
   on application startup, this module provides infrastructure on loading configuration
@@ -22,13 +23,13 @@ defmodule Ptolemy.Loader do
   > your application's `:secret_key` value. It can be retrieved at any time afterwards with
   > `Application.get_env(:app_name, :secret_key)`
 
-  To start your application with the loader, simply add it as the *first process* under your
+  To start your application with the loader, simply add the `LoaderSupervisor` as the *first process* under your
   application supervision tree.
 
   ```elixir
     # add to your child process list in application.ex or other top-level supervising process
     children = [
-      Ptolemy.Loader,
+      Ptolemy.LoaderSupervisor,
       # ...
     ]
   ```

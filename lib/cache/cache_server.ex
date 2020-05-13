@@ -1,4 +1,9 @@
 defmodule Ptolemy.Cache.CacheServer do
+  @moduledoc """
+  CacheServer is responsible for starting the cache.
+
+  Starting the cache is wrapped in a GenServer so that the cache can be started via a supervisor along side the loader.
+  """
   use GenServer
   alias Ptolemy.Cache
 

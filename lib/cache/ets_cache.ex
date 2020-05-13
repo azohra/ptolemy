@@ -1,4 +1,11 @@
 defmodule Ptolemy.Cache.ETSCache do
+  @moduledoc """
+  `Ptolemy.Cache.ETSCache` is a cache implementation backed by ETS.
+
+  The cache is started as a named table so the underlying pid does not need to be shared between processes.
+  The cache itself is meant to be started by CacheServer so that in the future, if the pid does need to be shared
+  other processes can query the pid from CacheServer.
+  """
   @behaviour Ptolemy.Cache.CacheBehaviour
   @cache_name __MODULE__
 
