@@ -61,3 +61,5 @@ config :ptolemy,
            opts: []
          }
        }
+
+config :ptolemy, cache: CacheMock

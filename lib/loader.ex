@@ -1,6 +1,7 @@
 defmodule Ptolemy.Loader do
   @moduledoc """
   `Ptolemy.Loader` implements a highly opinionated Application Configuration solution.
+  The loader is meant to be started via `Ptolemy.LoaderSupervisor`.
 
   Instead of having compile-time configuration and secrets, or simple system environment variables
   on application startup, this module provides infrastructure on loading configuration
@@ -22,13 +23,13 @@ defmodule Ptolemy.Loader do
   > your application's `:secret_key` value. It can be retrieved at any time afterwards with
   > `Application.get_env(:app_name, :secret_key)`
 
-  To start your application with the loader, simply add it as the *first process* under your
+  To start your application with the loader, simply add the `LoaderSupervisor` as the *first process* under your
   application supervision tree.
 
   ```elixir
     # add to your child process list in application.ex or other top-level supervising process
     children = [
-      Ptolemy.Loader,
+      Ptolemy.LoaderSupervisor,
       # ...
     ]
   ```
@@ -121,6 +122,7 @@ defmodule Ptolemy.Loader do
     case GenServer.start_link(__MODULE__, config) do
       {:ok, pid} = result ->
         GenServer.call(pid, :startup, 16000)
+        Ptolemy.Cache.clear_cache()
         result
 
       result ->
@@ -183,6 +185,14 @@ defmodule Ptolemy.Loader do
     end
   end
 
+  def register_reload(loader, module, module_args, ttl_in_milliseconds) do
+    Process.send_after(
+      loader,
+      {:expired, {module, module_args}},
+      ttl_in_milliseconds
+    )
+  end
+
   ####### impl
   @impl true
   def handle_call(:startup, _from, config) do
@@ -210,6 +220,8 @@ defmodule Ptolemy.Loader do
 
   @impl true
   def handle_info({:expired, {module, module_args}}, config) do
+    Ptolemy.Cache.clear_cache()
+
     config
     |> Keyword.get(:env)
     |> Enum.find(fn

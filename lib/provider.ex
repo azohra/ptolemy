@@ -98,9 +98,10 @@ defmodule Ptolemy.Provider do
 
       @doc false
       def register_ttl(loader_pid, query, ttl, ttl_unit \\ :milliseconds) do
-        Process.send_after(
+        Ptolemy.Loader.register_reload(
           loader_pid,
-          {:expired, {__MODULE__, query}},
+          __MODULE__,
+          query,
           Ptolemy.Provider.to_millis(ttl, ttl_unit)
         )
       end

@@ -4,7 +4,7 @@ defmodule Ptolemy.MixProject do
   def project do
     [
       app: :ptolemy,
-      version: "0.3.0",
+      version: "1.0.0",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -19,7 +19,8 @@ defmodule Ptolemy.MixProject do
         extras: [
           "README.md": [filename: "README.md", title: "Ptolemy"]
         ]
-      ]
+      ],
+      elixirc_paths: elixirc_paths(Mix.env),
     ]
   end
 
@@ -33,11 +34,12 @@ defmodule Ptolemy.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:tesla, "~> 1.2.1"},
+      {:tesla, "~> 1.3.1"},
       {:joken, "~> 1.5"},
       {:hackney, "~> 1.6"},
       {:jason, ">= 1.0.0"},
       {:poison, "~> 3.1"},
+      {:mox, "~> 0.5.1"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false}
     ]
   end
@@ -54,4 +56,7 @@ defmodule Ptolemy.MixProject do
       links: %{"GitHub" => "https://github.com/azohra/ptolemy"}
     ]
   end
+
+  defp elixirc_paths(:test), do: ["test/support", "lib"]
+  defp elixirc_paths(_),     do: ["lib"]
 end

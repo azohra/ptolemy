@@ -1,6 +1,7 @@
 defmodule KVTest do
   use ExUnit.Case, async: false
   import Tesla.Mock
+  import Mox
 
   @vurl "https://test-vault.com"
   @base_url "https://test-vault.com/v1"
@@ -71,16 +72,21 @@ defmodule KVTest do
   end
 
   test "read secret", %{test: test_name} do
+    secret = %{"test" => "haha"}
+    CacheMock
+    |> expect(:get, 2, fn(_k) -> :not_found end)
+    |> expect(:put, 2, fn(_k, _v) -> true end)
+
     {:ok, server} = Ptolemy.start(test_name, :server2)
     {:ok, body} = Ptolemy.read(server, :kv_engine1, [:test_secret])
     assert body === %{
         "data" => %{
-          "data" => %{"test" => "haha"}
+          "data" => secret
         },
         "lease_duration" => 0,
     }
     {:ok, body} = Ptolemy.read(server, :kv_engine1, [:test_secret, true])
-    assert body === %{"test" => "haha"}
+    assert body === secret
   end
 
   test "update secret", %{test: test_name} do
@@ -110,6 +116,10 @@ defmodule KVTest do
   end
 
   test "bang functions", %{test: test_name} do
+    CacheMock
+    |> expect(:get, fn(_k) -> :not_found end)
+    |> expect(:put, fn(_k, _v) -> true end)
+
     {:ok, server} = Ptolemy.start(test_name, :server2)
     alias Ptolemy.Engines.KV
     assert :ok === KV.create!(server, :kv_engine1, :test_secret, %{Hello: "World"})

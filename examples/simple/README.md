@@ -47,15 +47,19 @@ PKI secret is an example of dynamic secret loading. We set the TTL for it to **1
 
 You can also play with the Vault interface we developed, you can start with
 
-1. Starting a ptolemy server
+1. Starting the Ptolemy cache
+  ```
+  Ptolemy.Cache.create_table()
+  ```
+2. Starting a ptolemy server
   ```
   {:ok, server} = Ptolemy.start(:example_server, :simple_server)
   ```
-2. Try to read the a secret from Vault's KV engine
+3. Try to read the a secret from Vault's KV engine
   ```
   Ptolemy.read(server, :simple_kv_engine, [:simple_secret])
   ```
-3. Update a secret in Vault
+4. Update a secret in Vault
   ```
   Ptolemy.update(server, :simple_kv_engine, [:simple_secret, %{foo: "new value here", bar: "not a integer anymore"}])
   ```

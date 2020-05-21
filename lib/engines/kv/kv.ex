@@ -61,7 +61,7 @@ defmodule Ptolemy.Engines.KV do
     client = create_client(server_name)
     opts = [version: version]
 
-    {_err, resp} = Engine.read_secret(client, secret, opts)
+    {_status, resp} = Engine.read_secret(client, secret, opts)
 
     case resp do
       %{} ->
