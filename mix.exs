@@ -34,7 +34,7 @@ defmodule Ptolemy.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:tesla, "~> 1.2.1"},
+      {:tesla, "~> 1.3.1"},
       {:joken, "~> 1.5"},
       {:hackney, "~> 1.6"},
       {:jason, ">= 1.0.0"},
