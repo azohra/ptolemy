@@ -18,6 +18,20 @@ defmodule Ptolemy.Loader do
     ]
   ]
   ```
+
+  > The keyword refresh_time can be added to refresh your configuration over a set time in milliseconds
+
+  ```elixir
+  alias Ptolemy.Providers.SystemEnv
+  config :ptolemy, loader: [
+    refresh_time: 30000,
+    env: [
+      {{:app_name, :secret_key}, {SystemEnv, "PATH"}},
+      # ...
+    ]
+  ]
+  ```
+
   > The above configuration will result in the system environment variable `PATH` being set to
   > your application's `:secret_key` value. It can be retrieved at any time afterwards with
   > `Application.get_env(:app_name, :secret_key)`
@@ -183,9 +197,7 @@ defmodule Ptolemy.Loader do
     end
   end
 
-  ####### impl
-  @impl true
-  def handle_call(:startup, _from, config) do
+  defp load_config(config) do
     started_providers =
       config
       |> Keyword.get(:env, [])
@@ -200,12 +212,35 @@ defmodule Ptolemy.Loader do
       end)
       |> Enum.uniq()
 
-    {:reply, :ok, config |> Keyword.put(:started, started_providers)}
+    case config |> Keyword.get(:refresh_time, nil) do
+      freq when is_integer(freq) ->
+        reload(self(), freq)
+
+      _ ->
+        nil
+    end
+
+    started_providers
+  end
+
+  defp reload(pid, reload_frequency) do
+    Process.send_after(pid, :reload, reload_frequency)
+  end
+
+  ####### impl
+  @impl true
+  def handle_call(:startup, _from, config) do
+    {:reply, :ok, config |> Keyword.put(:started, load_config(config))}
   end
 
   @impl true
   def handle_call(:config, _from, config) do
     {:reply, config, config}
+  end
+
+  @impl true
+  def handle_info(:reload, config) do
+    {:noreply, config |> Keyword.put(:started, load_config(config))}
   end
 
   @impl true
