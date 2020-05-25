@@ -46,6 +46,24 @@ defmodule Ptolemy.LoaderTest do
       assert Application.get_env(test_name, :testval) == "THIS_WORKED"
     end
 
+    test "loader refreshes application value correctly", %{test: test_name} do
+      Application.put_env(test_name, :testval, "THIS_WORKED")
+
+      {:ok, _loader} =
+        Loader.start_link(
+          refresh_time: 1000,
+          env: [
+            {{test_name, :testval},
+             {LoaderTest.EchoProvider, Application.get_env(test_name, :testval)}}
+          ]
+        )
+
+      assert Application.get_env(test_name, :testval) == "THIS_WORKED"
+      Application.put_env(test_name, :testval, "THIS_CHANGED")
+      :timer.sleep(1000)
+      assert Application.get_env(test_name, :testval) == "THIS_CHANGED"
+    end
+
     test "recieving an expired message will re-pull value", %{test: test_name} do
       {:ok, loader} =
         Loader.start_link(
