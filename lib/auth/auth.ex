@@ -223,12 +223,15 @@ defmodule Ptolemy.Auth do
   """
   @spec vault_auth_client(String.t(), list(), list()) :: %Tesla.Client{}
   def vault_auth_client(url, headers, opts) do
-    Tesla.client([
-      {Tesla.Middleware.BaseUrl, "#{url}/v1"},
-      {Tesla.Middleware.Headers, headers},
-      {Tesla.Middleware.Opts, opts},
-      {Tesla.Middleware.JSON, []}
-    ])
+    Tesla.client(
+      [
+        {Tesla.Middleware.BaseUrl, "#{url}/v1"},
+        {Tesla.Middleware.Headers, headers},
+        {Tesla.Middleware.Opts, opts},
+        {Tesla.Middleware.JSON, []}
+      ],
+      {Tesla.Adapter.Hackney, [ssl_options: [{:versions, [:"tlsv1.2"]}], recv_timeout: 10_000]}
+    )
   end
 
   # parses auth body to return relevant information

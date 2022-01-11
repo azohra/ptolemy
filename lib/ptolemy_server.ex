@@ -159,7 +159,7 @@ defmodule Ptolemy.Server do
 
       %{secret_id: _id, role_id: _rid} = parsed ->
         {:ok, parsed}
-      
+
       %{kube_client_token: _, vault_role: _, cluster_name: _} = parsed ->
         {:ok, parsed}
 
@@ -212,7 +212,10 @@ defmodule Ptolemy.Server do
             Process.send_after(self(), {:purge, :iap}, opts[:exp] * 1000)
           end
 
-          {:reply, {:ok, res}, state |> Map.put(:tokens, access_token) |> Map.put(:http_opts, opts |> Keyword.get(:http_opts, []))}
+          {:reply, {:ok, res},
+           state
+           |> Map.put(:tokens, access_token)
+           |> Map.put(:http_opts, opts |> Keyword.get(:http_opts, []))}
 
         %{token: token, renewable: renewable, lease_duration: ttl} = res ->
           access_token = [token]
@@ -227,7 +230,10 @@ defmodule Ptolemy.Server do
             Process.send_after(self(), {:purge, :all}, ttl * 1000)
           end
 
-          {:reply, {:ok, res}, state |> Map.put(:tokens, access_token) |> Map.put(:http_opts, opts |> Keyword.get(:http_opts, []))}
+          {:reply, {:ok, res},
+           state
+           |> Map.put(:tokens, access_token)
+           |> Map.put(:http_opts, opts |> Keyword.get(:http_opts, []))}
 
         {:error, msg} ->
           {:reply, {:error, msg}, state}
@@ -349,7 +355,10 @@ defmodule Ptolemy.Server do
           Process.send_after(self(), {:purge, :vault}, ttl * 1000)
         end
 
-        {:noreply, state |> Map.put(:tokens, [token]) |>  Map.put(:http_opts, opts |> Keyword.get(:http_opts, []))}
+        {:noreply,
+         state
+         |> Map.put(:tokens, [token])
+         |> Map.put(:http_opts, opts |> Keyword.get(:http_opts, []))}
 
       2 ->
         [{"X-Vault-Token", _bearer}, bearer] = toks
@@ -369,7 +378,10 @@ defmodule Ptolemy.Server do
           Process.send_after(self(), {:purge, :vault}, ttl * 1000)
         end
 
-        {:noreply, state |> Map.put(:tokens, [token, bearer]) |> Map.put(:http_opts, opts |> Keyword.get(:http_opts, []))}
+        {:noreply,
+         state
+         |> Map.put(:tokens, [token, bearer])
+         |> Map.put(:http_opts, opts |> Keyword.get(:http_opts, []))}
     end
   end
 

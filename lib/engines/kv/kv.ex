@@ -266,12 +266,15 @@ defmodule Ptolemy.Engines.KV do
     {:ok, http_opts} = Server.get_data(server_name, :http_opts)
     {:ok, url} = Server.get_data(server_name, :vault_url)
 
-    Tesla.client([
-      {Tesla.Middleware.BaseUrl, "#{url}/v1"},
-      {Tesla.Middleware.Headers, creds},
-      {Tesla.Middleware.Opts, http_opts},
-      {Tesla.Middleware.JSON, []}
-    ])
+    Tesla.client(
+      [
+        {Tesla.Middleware.BaseUrl, "#{url}/v1"},
+        {Tesla.Middleware.Headers, creds},
+        {Tesla.Middleware.Opts, http_opts},
+        {Tesla.Middleware.JSON, []}
+      ],
+      {Tesla.Adapter.Hackney, [ssl_options: [{:versions, [:"tlsv1.2"]}], recv_timeout: 10_000]}
+    )
   end
 
   # Helper functions to make paths
