@@ -1,9 +1,14 @@
 defmodule Ptolemy.Providers.SystemEnvTest do
   use ExUnit.Case
+  import Mox
 
   alias Ptolemy.Loader
 
+  setup :verify_on_exit!
+
   test "can load a system env var", %{test: test_name} do
+    expect(CacheMock, :clear_cache, fn -> true end)
+
     {:ok, _loader} =
       Loader.start_link(
         env: [

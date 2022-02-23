@@ -5,12 +5,31 @@ defmodule Ptolemy.Engines.KV.Engine do
 
   require Logger
 
+  alias Ptolemy.Cache
+
   @doc """
   Reads a secret from a remote vault server using Vault's KV engine.
   """
   @spec read_secret(Tesla.Client.t(), String.t(), [version: integer()] | []) ::
           {:ok, map()} | {:error, String.t()}
   def read_secret(client, path, vers \\ []) do
+    key = Tesla.build_url("#{path}", vers)
+    case Cache.get(key) do
+      :not_found ->
+        case read_remote_secret(client, path, vers) do
+          {:ok, body} = resp ->
+            Cache.put(key, body)
+            resp
+
+          error ->
+            error
+        end
+
+      value -> {:ok, value}
+    end
+  end
+
+  defp read_remote_secret(client, path, vers) do
     with {:ok, resp} <- Tesla.get(client, "#{path}", query: vers) do
       case {resp.status, resp.body} do
         {status, body} when status in 200..299 ->

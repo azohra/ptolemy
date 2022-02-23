@@ -10,7 +10,7 @@ defmodule Simple.App do
     import Supervisor.Spec
 
     children = [
-      worker(Ptolemy.Loader, [])
+      supervisor(Ptolemy.LoaderSupervisor, [])
     ]
 
     opts = [name: __MODULE__, strategy: :one_for_all, restart: :permanent]
